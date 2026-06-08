@@ -4,6 +4,19 @@ declare module "next-auth" {
   interface Session {
     user: DefaultSession["user"] & {
       id: string;
+      plan: "free" | "pro";
     };
+    gscConnected?: boolean;
+  }
+
+  interface User {
+    plan?: "free" | "pro";
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    plan?: "free" | "pro";
+    gscConnected?: boolean;
   }
 }

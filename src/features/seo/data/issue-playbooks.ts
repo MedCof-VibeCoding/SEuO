@@ -1,0 +1,103 @@
+import type { SeoIssueDetail } from "~/features/seo/types/analysis";
+
+type PlaybookTemplate = Omit<SeoIssueDetail, "id" | "metricId">;
+
+export const ISSUE_PLAYBOOKS: Record<string, PlaybookTemplate> = {
+  "meta-desc": {
+    title: "Meta description fraca ou curta",
+    problem: "A meta description não comunica benefício nem diferencial na SERP.",
+    seoImpact: "Reduz CTR orgânico e sinal de relevância para a consulta.",
+    conversionImpact: "Menos cliques qualificados chegam à landing page.",
+    priority: "high",
+    effort: "low",
+    howToFix:
+      "Escreva 140–160 caracteres com palavra-chave principal, benefício claro e CTA implícito. Uma descrição por URL.",
+    badExample: "Agência de marketing digital.",
+    goodExample:
+      "Agência de marketing digital especializada em SEO e performance para aumentar tráfego e conversões.",
+    expectedResult: "Maior taxa de clique orgânica (CTR) e melhor alinhamento com intenção de busca.",
+    category: "technical",
+    estimatedCtrGain: "high",
+    estimatedTrafficGain: "medium",
+  },
+  schema: {
+    title: "Schema markup ausente",
+    problem: "Páginas sem dados estruturados JSON-LD limitam rich results.",
+    seoImpact: "Perde oportunidades de destaque (FAQ, breadcrumbs, organização) no Google.",
+    conversionImpact: "Menor confiança visual na SERP reduz cliques.",
+    priority: "high",
+    effort: "low",
+    howToFix:
+      "Implemente Organization, WebSite e tipos específicos (Article, Product, FAQPage) conforme o template da página.",
+    badExample: "HTML sem nenhum script application/ld+json.",
+    goodExample: "FAQPage + BreadcrumbList + WebPage com mainEntity documentado.",
+    expectedResult: "Maior elegibilidade a rich snippets e CTR incremental.",
+    category: "technical",
+    estimatedTrafficGain: "medium",
+    estimatedCtrGain: "medium",
+  },
+  "load-time": {
+    title: "Tempo de carregamento elevado",
+    problem: "A página demora para exibir conteúdo útil ao usuário.",
+    seoImpact: "Core Web Vitals ruins afetam ranking, especialmente em mobile.",
+    conversionImpact: "Cada 100ms a mais aumenta taxa de rejeição.",
+    priority: "critical",
+    effort: "medium",
+    howToFix:
+      "Otimize LCP (imagens WebP, preload de hero), reduza JS bloqueante, use CDN e cache de borda.",
+    badExample: "LCP acima de 4s em mobile com imagens PNG pesadas.",
+    goodExample: "LCP abaixo de 2,5s com hero otimizado e fontes pré-carregadas.",
+    expectedResult: "Melhora de ranking e +15–25% em engajamento mobile.",
+    category: "performance",
+    estimatedTrafficGain: "high",
+    estimatedCtrGain: "low",
+  },
+  "meta-title": {
+    title: "Meta title genérico ou curto",
+    problem: "O título da SERP não diferencia sua página dos concorrentes.",
+    seoImpact: "Menor relevância percebida e CTR abaixo do potencial.",
+    conversionImpact: "Usuários clicam em resultados mais específicos.",
+    priority: "high",
+    effort: "low",
+    howToFix:
+      "Use 50–60 caracteres: palavra-chave + proposta de valor + marca. Teste variações com foco em intenção.",
+    badExample: "Home — Minha Empresa",
+    goodExample: "Auditoria SEO Comparativa | Analise Concorrentes — SEuO",
+    expectedResult: "CTR mais alto e melhor alinhamento semântico.",
+    category: "technical",
+    estimatedCtrGain: "high",
+    estimatedTrafficGain: "medium",
+  },
+  "content-length": {
+    title: "Conteúdo superficial vs. concorrentes",
+    problem: "Textos mais curtos cobrem menos intenções de busca e entidades do nicho.",
+    seoImpact: "Google prioriza profundidade topical quando concorrentes são mais completos.",
+    conversionImpact: "Menor autoridade percebida reduz confiança e tempo na página.",
+    priority: "high",
+    effort: "medium",
+    howToFix:
+      "Mapeie gaps vs. concorrentes: adicione seções FAQ, comparativos, dados e exemplos práticos.",
+    badExample: "Página de 400 palavras sobre um tema que concorrentes cobrem com 1.500+.",
+    goodExample: "Guia completo com H2 por subintenção, FAQ e dados atualizados.",
+    expectedResult: "Mais impressões em long-tail e melhor posicionamento em termos informacionais.",
+    category: "content",
+    estimatedTrafficGain: "high",
+    estimatedCtrGain: "medium",
+  },
+  "keyword-density": {
+    title: "Densidade ou repetição de palavras-chave",
+    problem: "Termos repetidos sem variação semântica ou stuffing leve.",
+    seoImpact: "Risco de over-optimization e leitura artificial.",
+    conversionImpact: "Texto pouco persuasivo afasta visitantes qualificados.",
+    priority: "medium",
+    effort: "low",
+    howToFix:
+      "Use sinônimos, entidades relacionadas (NLP) e responda perguntas reais do usuário.",
+    badExample: "SEO SEO agência SEO barata SEO...",
+    goodExample: "Otimização orgânica, visibilidade no Google e estratégia de conteúdo integrada.",
+    expectedResult: "Melhor legibilidade e cobertura semântica sem penalização.",
+    category: "content",
+    estimatedTrafficGain: "medium",
+    estimatedCtrGain: "low",
+  },
+};

@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+@keyframes register-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-register-enter {
+  animation: register-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -11,4 +26,46 @@
   --color-shell-warm: #2a1418;
   --color-sidebar: #120809;
   --color-sidebar-border: color-mix(in oklab, #e2263c 22%, transparent);
+
+  /* SEO UI — mesma paleta da página de login (brand + shell + sidebar) */
+  --color-seo-accent: var(--color-brand);
+  --color-seo-accent-bright: var(--color-brand-bright);
+  --color-seo-success: var(--color-brand-bright);
+  --color-seo-panel: var(--color-sidebar);
+  --color-seo-panel-border: var(--color-sidebar-border);
+}
+
+/** Fundo compartilhado: login, SEO e workspace */
+@utility shell-page-bg {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--color-shell-mid),
+    var(--color-shell-warm),
+    var(--color-shell)
+  );
+}
+
+@keyframes seo-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-seo-fade-up {
+  animation: seo-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
 }

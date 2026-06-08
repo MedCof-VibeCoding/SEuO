@@ -5,9 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/", label: "Início" },
-  { href: "/explorar", label: "Explorar" },
-  { href: "/aprendizado", label: "Aprendizado" },
+  { href: "/workspace", label: "Painel" },
+  { href: "/", label: "Home SEO" },
+  { href: "/google-position-checker", label: "Posição Google" },
+  { href: "/workspace/explorar", label: "Explorar" },
+  { href: "/workspace/aprendizado", label: "Aprendizado" },
 ] as const;
 
 export function AppSidebar() {
@@ -17,22 +19,29 @@ export function AppSidebar() {
     <aside className="flex w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
       <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-5">
         <Image
-          src="/header-logo.svg"
-          alt="Logo"
+          src="/seuo-logo-icon.svg"
+          alt="SEuO"
           width={40}
           height={40}
           className="h-10 w-10"
         />
         <span className="font-semibold tracking-tight text-white">
-          <span className="text-brand-bright">Vibe</span> coding
+          SE<span className="text-brand-bright">u</span>O
         </span>
       </div>
-      <nav className="flex flex-col gap-1 p-3" aria-label="Principal">
+      <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Principal">
         {navItems.map((item) => {
           const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+            item.href === "/workspace"
+              ? pathname === "/workspace"
+              : item.href === "/"
+                ? pathname === "/" ||
+                  pathname.startsWith("/analyzer") ||
+                  pathname.startsWith("/compare") ||
+                  pathname.startsWith("/reports") ||
+                  pathname.startsWith("/settings") ||
+                  pathname.startsWith("/google-position-checker")
+                : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}

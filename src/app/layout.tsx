@@ -5,18 +5,22 @@ import { Geist } from "next/font/google";
 import { getServerSession } from "next-auth";
 
 import { AuthSessionProvider } from "~/app/_components/auth-session-provider";
+import { AppToaster } from "~/app/_components/app-toaster";
 import { authOptions } from "~/server/auth/auth-options";
 import { TRPCReactProvider } from "~/trpc/react";
 
 export const metadata: Metadata = {
-  title: "Vibe coding — modelo",
+  title: {
+    default: "SEuO — Análise SEO comparativa",
+    template: "%s | SEuO",
+  },
   description:
-    "Modelo Next.js + tRPC + MongoDB para aprender a construir com IA.",
-  icons: [{ rel: "icon", url: "/header-logo.svg", type: "image/svg+xml" }],
+    "Compare seu site com concorrentes. SEO técnico, performance, conteúdo e autoridade digital.",
+  icons: [{ rel: "icon", url: "/seuo-logo-icon.svg", type: "image/svg+xml" }],
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e2263c",
+  themeColor: "#0a0607",
 };
 
 const geist = Geist({
@@ -35,6 +39,7 @@ export default async function RootLayout({
         <TRPCReactProvider>
           <AuthSessionProvider session={session}>
             {children}
+            <AppToaster />
           </AuthSessionProvider>
         </TRPCReactProvider>
       </body>
