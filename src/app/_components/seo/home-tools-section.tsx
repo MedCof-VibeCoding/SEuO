@@ -21,6 +21,15 @@ const TOOLS = [
     href: "/google-position-checker",
     cta: "Abrir Position Checker",
   },
+  {
+    title: "QuickWin — Pauta SEO",
+    description1:
+      "Gere a pauta editorial no padrão MedCof/SearchHub: snippet, H1, estrutura H2/H3 com instruções, termos secundários e linkagem interna.",
+    description2:
+      "Só a pauta — sem o texto do artigo. Pronta para o redator do blog MedCof.",
+    href: "/quick-wins",
+    cta: "Criar QuickWin",
+  },
 ] as const;
 
 /**
@@ -32,7 +41,7 @@ export function HomeToolsSection() {
       <h2 id="home-tools-heading" className="sr-only">
         Ferramentas disponíveis
       </h2>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         {TOOLS.map((tool, i) => (
           <SeoPanel key={tool.title} delay={i * 80} className="flex h-full flex-col">
             <h3 className="text-xl font-bold text-white">{tool.title}</h3>

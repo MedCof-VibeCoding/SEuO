@@ -30,7 +30,7 @@ export function AiRecommendationPanel({
         </div>
       ) : (
         <p className="text-sm text-white/45">
-          Configure GEMINI_API_KEY no .env para análise comparativa com Gemini.
+          Configure OPENAI_API_KEY no .env para análise comparativa com OpenAI.
         </p>
       )}
 

@@ -9,6 +9,7 @@ import {
   Globe,
   Lightbulb,
   MousePointerClick,
+  Percent,
   TrendingUp,
 } from "lucide-react";
 
@@ -85,9 +86,18 @@ export function ResultDashboard({ result }: ResultDashboardProps) {
           role="alert"
         >
           {result.dataSource === "search_console"
-            ? "Sem impressões no Search Console para esta URL e palavra-chave nos últimos 28 dias."
+            ? result.keywordAutoDetected
+              ? "Nenhuma query registrada no Search Console para esta URL nos últimos 28 dias."
+              : "Sem impressões no Search Console para esta URL e palavra-chave nos últimos 28 dias."
             : "Esta página não foi encontrada nas primeiras 100 posições do Google para esta palavra-chave."}
         </div>
+      ) : null}
+
+      {result.keywordAutoDetected && result.found ? (
+        <p className="text-xs text-white/45">
+          Palavra-chave principal detectada automaticamente:{" "}
+          <span className="font-medium text-brand-bright">“{result.keyword}”</span>
+        </p>
       ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -109,21 +119,26 @@ export function ResultDashboard({ result }: ResultDashboardProps) {
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <MetricCard
           icon={BarChart3}
           label={result.dataSource === "search_console" ? "Impressões" : "Volume de busca"}
           value={result.searchVolumeLabel}
         />
         <MetricCard
+          icon={MousePointerClick}
+          label="Cliques"
+          value={result.clicksLabel}
+        />
+        <MetricCard
+          icon={Percent}
+          label={result.dataSource === "search_console" ? "CTR" : "CTR estimado"}
+          value={`${result.estimatedCtr.toFixed(1)}%`}
+        />
+        <MetricCard
           icon={TrendingUp}
           label="Concorrência"
           value={result.competitionLabel}
-        />
-        <MetricCard
-          icon={MousePointerClick}
-          label="CTR estimado"
-          value={`${result.estimatedCtr.toFixed(1)}%`}
         />
         <MetricCard icon={Calendar} label="Consulta" value={checkedLabel} compact />
       </div>

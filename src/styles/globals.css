@@ -60,6 +60,118 @@
   animation: seo-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.quick-win-report {
+  color: rgb(255 255 255 / 0.72);
+  line-height: 1.75;
+}
+
+.quick-win-report h1,
+.quick-win-report h2,
+.quick-win-report h3,
+.quick-win-report h4 {
+  color: white;
+  font-weight: 700;
+  line-height: 1.3;
+  scroll-margin-top: 5rem;
+}
+
+.quick-win-report h1 {
+  margin-bottom: 1.5rem;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+.quick-win-report h2 {
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+  padding-bottom: 0.65rem;
+  font-size: 1.4rem;
+}
+
+.quick-win-report h3 {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-brand-bright);
+  font-size: 1.1rem;
+}
+
+.quick-win-report h4 {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+}
+
+.quick-win-report p,
+.quick-win-report ul,
+.quick-win-report ol {
+  margin: 0.75rem 0;
+}
+
+.quick-win-report ul,
+.quick-win-report ol {
+  padding-left: 1.4rem;
+}
+
+.quick-win-report ul {
+  list-style: disc;
+}
+
+.quick-win-report ol {
+  list-style: decimal;
+}
+
+.quick-win-report li {
+  margin: 0.35rem 0;
+}
+
+.quick-win-report blockquote {
+  margin: 1.25rem 0;
+  border-left: 3px solid var(--color-brand);
+  border-radius: 0 0.75rem 0.75rem 0;
+  background: color-mix(in oklab, var(--color-brand) 9%, transparent);
+  padding: 0.8rem 1rem;
+  color: rgb(255 255 255 / 0.8);
+}
+
+.quick-win-report table {
+  margin: 1.25rem 0;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.quick-win-report th,
+.quick-win-report td {
+  border: 1px solid rgb(255 255 255 / 0.1);
+  padding: 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.quick-win-report th {
+  background: rgb(255 255 255 / 0.06);
+  color: white;
+}
+
+.quick-win-report a {
+  color: var(--color-brand-bright);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.quick-win-report hr {
+  margin: 2.5rem 0;
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.quick-win-report pre {
+  margin: 1rem 0;
+  overflow-x: auto;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.75rem;
+  background: rgb(0 0 0 / 0.35);
+  padding: 1rem;
+}
+
 @media print {
   .no-print {
     display: none !important;
@@ -67,5 +179,14 @@
   body {
     background: white !important;
     color: black !important;
+  }
+  .quick-win-report,
+  .quick-win-report * {
+    color: black !important;
+  }
+  .quick-win-report {
+    border: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
   }
 }

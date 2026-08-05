@@ -17,6 +17,7 @@ const CATEGORIES = Object.keys(CATEGORY_LABELS) as SeoCategory[];
 
 type SeoRadarChartProps = {
   domains: DomainAnalysis[];
+  categories?: SeoCategory[];
 };
 
 const COLORS = ["#ff4d62", "#e2263c", "#94a3b8"];
@@ -24,8 +25,8 @@ const COLORS = ["#ff4d62", "#e2263c", "#94a3b8"];
 /**
  * Gráfico radar comparativo por categoria.
  */
-export function SeoRadarChart({ domains }: SeoRadarChartProps) {
-  const data = CATEGORIES.map((cat) => {
+export function SeoRadarChart({ domains, categories = CATEGORIES }: SeoRadarChartProps) {
+  const data = categories.map((cat) => {
     const row: Record<string, string | number> = {
       category: CATEGORY_LABELS[cat],
     };

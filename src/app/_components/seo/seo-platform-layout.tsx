@@ -11,7 +11,7 @@ import { ToolsNavMenu } from "./tools-nav-menu";
  */
 function SeoHeader() {
   return (
-    <header className="no-print sticky top-0 z-50 border-b border-sidebar-border bg-sidebar/80 backdrop-blur-xl">
+    <header className="no-print pointer-events-auto sticky top-0 z-50 border-b border-sidebar-border bg-sidebar/80 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
         <Link
           href="/"
@@ -38,9 +38,9 @@ function SeoHeader() {
  */
 export function SeoPlatformLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="shell-page-bg min-h-screen text-white">
+    <div className="shell-page-bg relative isolate min-h-screen text-white">
       <div
-        className="pointer-events-none fixed inset-0 opacity-50"
+        className="pointer-events-none fixed inset-0 -z-10 opacity-50"
         aria-hidden
         style={{
           background:
@@ -48,7 +48,7 @@ export function SeoPlatformLayout({ children }: { children: ReactNode }) {
         }}
       />
       <SeoHeader />
-      <main className="relative z-0">{children}</main>
+      <main className="relative">{children}</main>
     </div>
   );
 }

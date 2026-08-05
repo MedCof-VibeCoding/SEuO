@@ -13,6 +13,8 @@ export type RelatedRankingKeyword = {
   position: number | null;
   rankTier: GoogleRankTier;
   searchVolumeLabel: string;
+  clicks: number;
+  clicksLabel: string;
   /** Quão ligada ao conteúdo da página (0–100, estimado). */
   relevanceScore: number;
   isPrimary: boolean;
@@ -27,6 +29,8 @@ export type GooglePositionCheckResult = {
   gscProperty?: string;
   url: string;
   keyword: string;
+  /** true quando a keyword veio da query com mais impressões no GSC (URL sem keyword informada). */
+  keywordAutoDetected?: boolean;
   position: number | null;
   rankTier: GoogleRankTier;
   found: boolean;
@@ -36,6 +40,8 @@ export type GooglePositionCheckResult = {
   checkedAt: string;
   searchVolume: number;
   searchVolumeLabel: string;
+  clicks: number;
+  clicksLabel: string;
   competition: "low" | "medium" | "high";
   competitionLabel: string;
   estimatedCtr: number;

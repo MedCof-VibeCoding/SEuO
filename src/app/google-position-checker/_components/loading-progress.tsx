@@ -11,11 +11,8 @@ import { useEffect, useState } from "react";
 
 
 type LoadingProgressProps = {
-
   active: boolean;
-
-  keyword?: string;
-
+  label?: string;
 };
 
 
@@ -40,7 +37,7 @@ const STEPS = [
 
  */
 
-export function LoadingProgress({ active, keyword }: LoadingProgressProps) {
+export function LoadingProgress({ active, label }: LoadingProgressProps) {
 
   const [progress, setProgress] = useState(0);
 
@@ -123,9 +120,11 @@ export function LoadingProgress({ active, keyword }: LoadingProgressProps) {
           <p className="text-sm font-semibold text-white">Consultando Search Console</p>
 
           <p className="text-xs text-white/45">
-
-            {keyword ? `Palavra-chave: “${keyword}”` : STEPS[stepIndex]}
-
+            {label
+              ? label.startsWith("http")
+                ? "Buscando queries desta URL…"
+                : `Palavra-chave: “${label}”`
+              : STEPS[stepIndex]}
           </p>
 
         </div>

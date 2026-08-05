@@ -35,7 +35,7 @@ export function GooglePositionCheckerClient() {
   const [result, setResult] = useState<GooglePositionCheckResult | null>(null);
   const [history, setHistory] = useState<GooglePositionHistoryEntry[]>([]);
   const [formDefaults, setFormDefaults] = useState({ url: "", keyword: "" });
-  const [pendingKeyword, setPendingKeyword] = useState("");
+  const [pendingLabel, setPendingLabel] = useState("");
 
   useEffect(() => {
     setHistory(loadGooglePositionHistory());
@@ -44,7 +44,8 @@ export function GooglePositionCheckerClient() {
   const runCheck = useCallback(async (values: GooglePositionCheckFormValues) => {
     setLoading(true);
     setResult(null);
-    setPendingKeyword(values.keyword.trim());
+    const keyword = values.keyword.trim();
+    setPendingLabel(keyword || values.url.trim());
 
     try {
       const res = await fetch("/api/seo/google-position-check", {
@@ -79,7 +80,7 @@ export function GooglePositionCheckerClient() {
       toast.error("Erro de conexão. Verifique se o servidor está ativo.");
     } finally {
       setLoading(false);
-      setPendingKeyword("");
+      setPendingLabel("");
     }
   }, []);
 
@@ -118,7 +119,7 @@ export function GooglePositionCheckerClient() {
 
         <AnimatePresence mode="wait">
           {loading ? (
-            <LoadingProgress key="loading" active keyword={pendingKeyword} />
+            <LoadingProgress key="loading" active label={pendingLabel} />
           ) : null}
         </AnimatePresence>
 

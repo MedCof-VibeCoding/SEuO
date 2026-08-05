@@ -1,5 +1,4 @@
 import { resolveCollectedPages } from "~/features/seo/lib/collected-pages";
-import { buildSerpPositionAnalysis } from "~/features/seo/services/serp-position-engine";
 import type { SeoAnalysisReport } from "~/features/seo/types/analysis";
 
 /**
@@ -15,19 +14,9 @@ export function normalizeReport(raw: SeoAnalysisReport): SeoAnalysisReport {
     authority: primary?.categoryScores.authority ?? 0,
   };
 
-  const serpPosition =
-    raw.serpPosition ??
-    (primary
-      ? buildSerpPositionAnalysis(
-          raw.primaryDomain,
-          raw.competitors,
-          raw.domains,
-        )
-      : undefined);
-
   return {
     ...raw,
-    serpPosition,
+    serpPosition: raw.serpPosition,
     intelligenceScores: raw.intelligenceScores ?? defaultScores,
     issueDetails: raw.issueDetails ?? [],
     highImpactChanges: raw.highImpactChanges ?? [],

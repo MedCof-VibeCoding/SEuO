@@ -1,6 +1,12 @@
-# Vibe coding template
+# SEuO SEO
 
-A small [T3 Stack](https://create.t3.gg/)–style starter for learning **vibe coding** (building with AI): **Next.js (App Router)**, **TypeScript**, **Tailwind**, **tRPC**, and **MongoDB** via **Mongoose**. Secrets stay on the server; the browser talks only to tRPC.
+Plataforma de ferramentas SEO em português, construída sobre um [T3 Stack](https://create.t3.gg/)–style starter: **Next.js (App Router)**, **TypeScript**, **Tailwind**, **tRPC**, **MongoDB** (Mongoose) e **NextAuth**. Inclui análise comparativa com OpenAI, Google Position Checker (Search Console), otimização de texto e briefing editorial.
+
+**Documentação completa do projeto:** [docs/analise-projeto.md](docs/analise-projeto.md) — funcionalidades, arquitetura, variáveis de ambiente, fluxos de uso e débitos técnicos conhecidos.
+
+**Integração da API de análise HTML:** [docs/api-analyze-html.md](docs/api-analyze-html.md) — contrato do endpoint `POST /api/seo/analyze-html` para consumo por outro sistema ou I.A.
+
+**Integração Microsoft Clarity:** [docs/integracao-clarity.md](docs/integracao-clarity.md) — tracking, Data Export API, autenticação e configuração segura.
 
 ## What you need installed
 
@@ -37,7 +43,9 @@ A small [T3 Stack](https://create.t3.gg/)–style starter for learning **vibe co
    pnpm dev
    ```
 
-   Open [http://localhost:3000](http://localhost:3000). You should see a sidebar with navigation and placeholder pages.
+   Open [http://localhost:3000](http://localhost:3000). A home lista as ferramentas principais (análise comparativa e Position Checker).
+
+   Para análise comparativa, configure também `OPENAI_API_KEY` no `.env`. Para o Position Checker com dados reais, configure OAuth Google e faça login; em dev, `GSC_USE_MOCK=true` usa dados simulados.
 
 ## Project layout (where things go)
 
@@ -50,6 +58,9 @@ A small [T3 Stack](https://create.t3.gg/)–style starter for learning **vibe co
 | DB connection | `src/server/db/connection.ts` | Single shared Mongo connection |
 | Env validation | `src/env.js` | Safe list of environment variables |
 | AI hints | `.cursorrules` | Rules for Cursor / Copilot-style assistants |
+| Project analysis | `docs/analise-projeto.md` | Full feature list, usage guide, technical debt |
+| HTML SEO API integration | `docs/api-analyze-html.md` | Request/response contract for `POST /api/seo/analyze-html` |
+| Microsoft Clarity integration | `docs/integracao-clarity.md` | Tracking and authenticated Data Export API |
 
 ## Using Cursor (or another AI editor)
 

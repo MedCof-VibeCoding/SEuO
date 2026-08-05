@@ -102,9 +102,9 @@ export const contentAnalysisSchema = z.preprocess((data) => {
 }, contentShape);
 
 const actionPlanShape = z.object({
-  short_term: z.array(z.string()).max(3),
-  medium_term: z.array(z.string()).max(3),
-  long_term: z.array(z.string()).max(3),
+  short_term: z.array(z.string()).max(5),
+  medium_term: z.array(z.string()).max(5),
+  long_term: z.array(z.string()).max(5),
 });
 
 export type ActionPlanAnalysis = z.infer<typeof actionPlanShape>;
@@ -119,9 +119,9 @@ export const actionPlanAnalysisSchema = z.preprocess((data) => {
     "data",
   ]);
   return {
-    short_term: coerceStringList(root.short_term ?? root.shortTerm, 3),
-    medium_term: coerceStringList(root.medium_term ?? root.mediumTerm, 3),
-    long_term: coerceStringList(root.long_term ?? root.longTerm, 3),
+    short_term: coerceStringList(root.short_term ?? root.shortTerm, 5),
+    medium_term: coerceStringList(root.medium_term ?? root.mediumTerm, 5),
+    long_term: coerceStringList(root.long_term ?? root.longTerm, 5),
   };
 }, actionPlanShape);
 

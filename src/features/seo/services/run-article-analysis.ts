@@ -10,11 +10,10 @@ import {
   generate30DayPlan,
   rankDomains,
 } from "~/features/seo/services/comparison-engine";
-import type { ComparativeAnalysisSteps } from "~/features/seo/services/comparative-analysis-schemas";
 import {
   mapStepsToComparativeArticle,
-  runGeminiComparativeAnalysis,
 } from "~/features/seo/services/gemini-comparative-analysis";
+import { runOpenAIComparativeAnalysis } from "~/features/seo/services/openai-comparative-analysis";
 import {
   applyPlanLimits,
   buildContentIntelligence,
@@ -34,7 +33,8 @@ import type {
   UserPlan,
 } from "~/features/seo/types/analysis";
 import { SeoAnalysisError } from "~/features/seo/errors/analysis-errors";
-import { isGeminiConfigured } from "~/server/ai/gemini";
+import type { ComparativeAnalysisSteps } from "~/features/seo/services/comparative-analysis-schemas";
+import { isOpenAIConfigured } from "~/server/ai/openai";
 
 function urlLabel(url: string): string {
   try {
@@ -49,39 +49,58 @@ function urlLabel(url: string): string {
 /**
  * Domínios simplificados para gráficos do dashboard legado.
  */
-function buildDomainsFromUrls(
-  targetUrl: string,
-  competitors: string[],
-  contentScore: number,
+function buildDomainsFromPages(
+  pages: Awaited<ReturnType<typeof fetchPageForSeoAnalysis>>[],
 ): DomainAnalysis[] {
-  const raw: Omit<DomainAnalysis, "rank">[] = [
-    {
-      domain: urlLabel(targetUrl),
-      role: "primary",
-      overallScore: contentScore,
+  const raw: Omit<DomainAnalysis, "rank">[] = pages.map((page) => {
+    const technical = Math.min(
+      100,
+      (page.title ? 20 : 0) +
+        (page.metaDescription ? 20 : 0) +
+        (page.h1.length === 1 ? 20 : page.h1.length > 0 ? 10 : 0) +
+        (page.canonical ? 15 : 0) +
+        (page.hasSchemaMarkup ? 15 : 0) +
+        (page.lang ? 10 : 0),
+    );
+    const content = Math.min(
+      100,
+      Math.round(
+        Math.min(50, page.estimatedWordCount / 20) +
+          Math.min(20, page.h2.length * 3) +
+          Math.min(10, page.h3.length * 2) +
+          (page.hasFaqSection ? 10 : 0) +
+          (page.hasTables || page.hasLists ? 10 : 0),
+      ),
+    );
+    const accessibleImages =
+      page.imagesTotal === 0
+        ? 10
+        : Math.round(10 * (1 - page.imagesWithoutAlt / page.imagesTotal));
+    const ux = Math.min(
+      100,
+      30 +
+        Math.min(25, page.h2.length * 4) +
+        (page.hasLists ? 15 : 0) +
+        (page.hasTables ? 10 : 0) +
+        accessibleImages +
+        (page.lang ? 10 : 0),
+    );
+    const overallScore = Math.round((technical + content + ux) / 3);
+
+    return {
+      domain: urlLabel(page.url),
+      role: page.role,
+      overallScore,
       categoryScores: {
-        technical: contentScore,
-        performance: 65,
-        content: contentScore,
-        authority: 60,
-        ux: contentScore,
+        technical,
+        performance: 0,
+        content,
+        authority: 0,
+        ux,
       },
       metrics: [],
-    },
-    ...competitors.map((url) => ({
-      domain: urlLabel(url),
-      role: "competitor" as const,
-      overallScore: Math.min(95, contentScore + 5),
-      categoryScores: {
-        technical: 70,
-        performance: 70,
-        content: 72,
-        authority: 75,
-        ux: 70,
-      },
-      metrics: [],
-    })),
-  ];
+    };
+  });
   return rankDomains(raw);
 }
 
@@ -136,16 +155,16 @@ function buildArticleCompetitorAdvantages(
 }
 
 /**
- * Análise comparativa em 4 prompts Gemini (keywords, backlinks, conteúdo, plano).
+ * Análise comparativa em 3 prompts OpenAI (keywords, conteúdo, plano).
  */
 export async function runArticleComparativeAnalysis(
   input: AnalyzeArticlesInput,
   plan: UserPlan = "free",
 ): Promise<SeoAnalysisReport> {
-  if (!isGeminiConfigured()) {
+  if (!isOpenAIConfigured()) {
     throw new SeoAnalysisError(
-      "Configure GEMINI_API_KEY no .env e reinicie o servidor (pnpm dev).",
-      "GEMINI_NOT_CONFIGURED",
+      "Configure OPENAI_API_KEY no .env e reinicie o servidor (pnpm dev).",
+      "OPENAI_NOT_CONFIGURED",
       503,
     );
   }
@@ -159,18 +178,10 @@ export async function runArticleComparativeAnalysis(
     allUrls.map(({ url, role }) => fetchPageForSeoAnalysis(url, role)),
   );
 
-  const steps = await runGeminiComparativeAnalysis(input, fetchedPages);
+  const steps: ComparativeAnalysisSteps = await runOpenAIComparativeAnalysis(input, fetchedPages);
   const comparativeArticle = mapStepsToComparativeArticle(steps, input, fetchedPages);
 
-  const contentScore = Math.min(
-    95,
-    50 + comparativeArticle.content.content_opportunities.length * 3,
-  );
-  const domains = buildDomainsFromUrls(
-    input.targetUrl,
-    input.competitors,
-    contentScore,
-  );
+  const domains = buildDomainsFromPages(fetchedPages);
 
   let primaryHost = input.targetUrl;
   try {
@@ -203,7 +214,6 @@ export async function runArticleComparativeAnalysis(
   const keywordGaps = mapKeywordGaps(steps.keywords.keyword_gaps);
   const aiNarrative = [
     `Keywords: ${steps.keywords.top_keywords.slice(0, 5).join(", ") || "—"}`,
-    `Backlinks: ${steps.backlinks.top_link_opportunities.slice(0, 3).join("; ") || "—"}`,
     `Conteúdo: ${steps.content.content_opportunities.slice(0, 3).join("; ") || "—"}`,
   ].join("\n");
 
@@ -241,7 +251,7 @@ export async function runArticleComparativeAnalysis(
     competitorUrls: input.competitors,
     mainKeyword: input.mainKeyword,
     aiNarrative,
-    aiProvider: "gemini",
+    aiProvider: "openai",
     userPlan: plan,
   };
 

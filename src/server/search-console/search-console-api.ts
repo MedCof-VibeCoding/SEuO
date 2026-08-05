@@ -3,6 +3,8 @@ import "server-only";
 import { normalizePageUrl } from "~/features/seo/lib/normalize-page-url";
 
 const GSC_BASE = "https://www.googleapis.com/webmasters/v3";
+const URL_INSPECTION_ENDPOINT =
+  "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect";
 
 export type GscSite = { siteUrl: string; permissionLevel?: string };
 
@@ -12,6 +14,33 @@ export type GscSearchRow = {
   impressions: number;
   ctr: number;
   position: number;
+};
+
+export type GscSitemapEntry = {
+  path: string;
+  lastSubmitted?: string;
+  isPending?: boolean;
+  isSitemapsIndex?: boolean;
+  type?: string;
+  lastDownloaded?: string;
+  warnings?: string;
+  errors?: string;
+};
+
+export type GscUrlInspectionRaw = {
+  inspectionResultLink?: string;
+  indexStatusResult?: {
+    verdict?: string;
+    coverageState?: string;
+    robotsTxtState?: string;
+    indexingState?: string;
+    lastCrawlTime?: string;
+    pageFetchState?: string;
+    googleCanonical?: string;
+    userCanonical?: string;
+    crawledAs?: string;
+    referringUrls?: string[];
+  };
 };
 
 type SearchAnalyticsBody = {
@@ -131,7 +160,7 @@ export function resolveGscProperty(pageUrl: string, sites: GscSite[]): string | 
     }
   }
 
-  return sites[0]?.siteUrl ?? null;
+  return null;
 }
 
 function pageFilter(pageUrl: string) {
@@ -217,6 +246,41 @@ export async function fetchPageQueries(
 }
 
 /**
+ * Totais agregados de cliques, impressões, CTR e posição média para uma página.
+ */
+export async function fetchPageAggregateMetrics(
+  accessToken: string,
+  siteUrl: string,
+  pageUrl: string,
+  range = getGscDateRange(28),
+): Promise<{ clicks: number; impressions: number; ctr: number; position: number } | null> {
+  const normalized = normalizePageUrl(pageUrl);
+
+  const run = async (pageExpr: typeof pageFilter) => {
+    const rows = await querySearchAnalytics(accessToken, siteUrl, {
+      ...range,
+      dimensionFilterGroups: [{ filters: [pageExpr(normalized)] }],
+      rowLimit: 1,
+    });
+    return rows[0] ?? null;
+  };
+
+  let row = await run(pageFilter);
+  if (!row) {
+    row = await run(pageFilterContains);
+  }
+
+  if (!row || row.impressions === 0) return null;
+
+  return {
+    clicks: row.clicks,
+    impressions: row.impressions,
+    ctr: row.ctr,
+    position: row.position,
+  };
+}
+
+/**
  * Série diária de posição média para URL + query.
  */
 export async function fetchPositionHistory(
@@ -251,4 +315,125 @@ export async function fetchPositionHistory(
     }))
     .filter((p) => p.date)
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * Distribuição de audiência por país (Search Analytics).
+ */
+export async function fetchPageCountryBreakdown(
+  accessToken: string,
+  siteUrl: string,
+  pageUrl: string,
+  range = getGscDateRange(28),
+  rowLimit = 15,
+): Promise<GscSearchRow[]> {
+  return fetchDimensionBreakdown(accessToken, siteUrl, pageUrl, "country", range, rowLimit);
+}
+
+/**
+ * Distribuição de audiência por dispositivo (mobile/desktop/tablet).
+ */
+export async function fetchPageDeviceBreakdown(
+  accessToken: string,
+  siteUrl: string,
+  pageUrl: string,
+  range = getGscDateRange(28),
+  rowLimit = 5,
+): Promise<GscSearchRow[]> {
+  return fetchDimensionBreakdown(accessToken, siteUrl, pageUrl, "device", range, rowLimit);
+}
+
+/**
+ * Páginas do site com mais impressões (proxy de URLs servindo na busca).
+ */
+export async function fetchTopPages(
+  accessToken: string,
+  siteUrl: string,
+  range = getGscDateRange(28),
+  rowLimit = 20,
+): Promise<GscSearchRow[]> {
+  const rows = await querySearchAnalytics(accessToken, siteUrl, {
+    ...range,
+    dimensions: ["page"],
+    rowLimit,
+  });
+  return rows.sort((a, b) => b.impressions - a.impressions);
+}
+
+/**
+ * Lista sitemaps enviados e status de leitura no Search Console.
+ */
+export async function listSitemaps(
+  accessToken: string,
+  siteUrl: string,
+): Promise<GscSitemapEntry[]> {
+  const encodedSite = encodeURIComponent(siteUrl);
+  const res = await fetch(`${GSC_BASE}/sites/${encodedSite}/sitemaps`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new SearchConsoleApiError(res.status, err);
+  }
+  const data = (await res.json()) as { sitemap?: GscSitemapEntry[] };
+  return data.sitemap ?? [];
+}
+
+/**
+ * Inspeção individual de URL (indexação, canônicos, robots, crawl).
+ */
+export async function inspectUrl(
+  accessToken: string,
+  siteUrl: string,
+  inspectionUrl: string,
+): Promise<GscUrlInspectionRaw> {
+  const res = await fetch(URL_INSPECTION_ENDPOINT, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      inspectionUrl: normalizePageUrl(inspectionUrl),
+      siteUrl,
+      languageCode: "pt-BR",
+    }),
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new SearchConsoleApiError(res.status, err);
+  }
+
+  const data = (await res.json()) as {
+    inspectionResult?: GscUrlInspectionRaw;
+  };
+  return data.inspectionResult ?? {};
+}
+
+async function fetchDimensionBreakdown(
+  accessToken: string,
+  siteUrl: string,
+  pageUrl: string,
+  dimension: "country" | "device",
+  range: { startDate: string; endDate: string },
+  rowLimit: number,
+): Promise<GscSearchRow[]> {
+  const normalized = normalizePageUrl(pageUrl);
+
+  const run = async (pageExpr: typeof pageFilter) =>
+    querySearchAnalytics(accessToken, siteUrl, {
+      ...range,
+      dimensions: [dimension],
+      dimensionFilterGroups: [{ filters: [pageExpr(normalized)] }],
+      rowLimit,
+    });
+
+  let rows = await run(pageFilter);
+  if (rows.length === 0) {
+    rows = await run(pageFilterContains);
+  }
+  return rows.sort((a, b) => b.impressions - a.impressions);
 }

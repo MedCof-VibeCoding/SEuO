@@ -4,10 +4,20 @@ import OpenAI from "openai";
 
 import { env } from "~/env";
 
+const DEFAULT_MODEL = "gpt-4o-mini";
+
 function getOpenAIApiKey(): string | undefined {
   const key = process.env.OPENAI_API_KEY ?? env.OPENAI_API_KEY;
   const trimmed = key?.trim();
   return trimmed || undefined;
+}
+
+/**
+ * ID do modelo OpenAI (env OPENAI_MODEL ou padrão gpt-4o-mini).
+ */
+export function getOpenAIModelId(): string {
+  const model = process.env.OPENAI_MODEL ?? env.OPENAI_MODEL;
+  return model?.trim() || DEFAULT_MODEL;
 }
 
 /**

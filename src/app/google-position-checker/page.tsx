@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Landing Google Position Checker — URL + keyword.
+ * Landing Google Position Checker — consulta por URL (keyword opcional).
  */
 export default function GooglePositionCheckerPage() {
   return (

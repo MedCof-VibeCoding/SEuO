@@ -12,26 +12,35 @@ import {
   type AnalyzeArticlesFormInput,
   type AnalyzeArticlesFormValues,
 } from "~/features/seo/schemas/article-input";
+import {
+  saveComparativeAnalysisHistory,
+} from "~/features/seo/lib/comparative-analysis-history";
 import type { SeoAnalysisReport } from "~/features/seo/types/analysis";
 
 type DomainInputFormProps = {
   compact?: boolean;
+  onAnalysisComplete?: (report: SeoAnalysisReport) => void;
 };
 
 /**
- * Formulário de URLs — análise comparativa editorial (MedCof + Gemini).
+ * Formulário de URLs — análise comparativa editorial com OpenAI.
  */
 const ERROR_HINTS: Record<string, string> = {
+  OPENAI_NOT_CONFIGURED:
+    "Salve o .env com OPENAI_API_KEY e reinicie o servidor (pnpm dev).",
+  OPENAI_QUOTA_EXCEEDED:
+    "Cota OpenAI esgotada. Verifique billing em platform.openai.com/account/billing.",
+  OPENAI_AUTH_ERROR: "Chave inválida. Gere uma nova em platform.openai.com/api-keys",
   GEMINI_NOT_CONFIGURED:
-    "Salve o .env com GEMINI_API_KEY e reinicie o servidor (pnpm dev).",
+    "Salve o .env com OPENAI_API_KEY e reinicie o servidor (pnpm dev).",
   GEMINI_QUOTA_EXCEEDED:
-    "Cota Gemini esgotada. Aguarde ~1 min ou verifique billing no Google AI Studio.",
-  GEMINI_AUTH_ERROR: "Chave inválida. Gere uma nova em aistudio.google.com/apikey",
+    "Cota da API esgotada. Aguarde e tente novamente.",
+  GEMINI_AUTH_ERROR: "Chave de API inválida.",
   AI_INVALID_JSON: "A IA retornou JSON inválido. Tente novamente em alguns segundos.",
   AI_SCHEMA_MISMATCH: "A IA retornou formato inesperado. Tente novamente.",
 };
 
-export function DomainInputForm({ compact = false }: DomainInputFormProps) {
+export function DomainInputForm({ compact = false, onAnalysisComplete }: DomainInputFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -47,6 +56,8 @@ export function DomainInputForm({ compact = false }: DomainInputFormProps) {
       competitor1: "",
       competitor2: "",
       mainKeyword: "",
+      niche: "",
+      objective: "",
     },
   });
 
@@ -58,7 +69,14 @@ export function DomainInputForm({ compact = false }: DomainInputFormProps) {
         const res = await fetch("/api/seo/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
+          body: JSON.stringify({
+            targetUrl: values.targetUrl,
+            competitor1: values.competitor1 ?? "",
+            competitor2: values.competitor2 ?? "",
+            mainKeyword: values.mainKeyword ?? "",
+            niche: values.niche ?? "",
+            objective: values.objective ?? "",
+          }),
         });
 
         let data: {
@@ -89,6 +107,8 @@ export function DomainInputForm({ compact = false }: DomainInputFormProps) {
 
         console.log(JSON.stringify(data.report, null, 2));
         sessionStorage.setItem(`seo-report-${data.report.id}`, JSON.stringify(data.report));
+        saveComparativeAnalysisHistory(data.report);
+        onAnalysisComplete?.(data.report);
         toast.success("Análise comparativa concluída!");
         router.push(`/compare?id=${data.report.id}`);
       } catch {
@@ -99,7 +119,7 @@ export function DomainInputForm({ compact = false }: DomainInputFormProps) {
         setLoading(false);
       }
     },
-    [router],
+    [router, onAnalysisComplete],
   );
 
   const inputClass =
@@ -135,7 +155,7 @@ export function DomainInputForm({ compact = false }: DomainInputFormProps) {
       <div className={compact ? "grid gap-4" : "grid gap-4 sm:grid-cols-2"}>
         <div>
           <label htmlFor="competitor1" className="mb-1.5 block text-xs font-semibold text-white/60">
-            Concorrente 1
+            Concorrente 1 <span className="text-white/35">(opcional)</span>
           </label>
           <input
             id="competitor1"
@@ -164,6 +184,11 @@ export function DomainInputForm({ compact = false }: DomainInputFormProps) {
           {errors.competitor1.message}
         </p>
       ) : null}
+      {errors.competitor2 ? (
+        <p className="text-xs text-brand-bright" role="alert">
+          {errors.competitor2.message}
+        </p>
+      ) : null}
 
       <div>
         <label htmlFor="mainKeyword" className="mb-1.5 block text-xs font-semibold text-white/60">
@@ -176,6 +201,33 @@ export function DomainInputForm({ compact = false }: DomainInputFormProps) {
           className={inputClass}
           {...register("mainKeyword")}
         />
+      </div>
+
+      <div className={compact ? "grid gap-4" : "grid gap-4 sm:grid-cols-2"}>
+        <div>
+          <label htmlFor="niche" className="mb-1.5 block text-xs font-semibold text-white/60">
+            Nicho <span className="text-white/35">(opcional)</span>
+          </label>
+          <input
+            id="niche"
+            placeholder="Ex.: educação médica"
+            disabled={loading}
+            className={inputClass}
+            {...register("niche")}
+          />
+        </div>
+        <div>
+          <label htmlFor="objective" className="mb-1.5 block text-xs font-semibold text-white/60">
+            Objetivo <span className="text-white/35">(opcional)</span>
+          </label>
+          <input
+            id="objective"
+            placeholder="Ex.: gerar inscrições qualificadas"
+            disabled={loading}
+            className={inputClass}
+            {...register("objective")}
+          />
+        </div>
       </div>
 
       {submitError ? (
@@ -197,10 +249,10 @@ export function DomainInputForm({ compact = false }: DomainInputFormProps) {
           {loading ? (
             <>
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              Coletando páginas · 4 etapas IA…
+              Coletando páginas · 3 etapas IA…
             </>
           ) : (
-            "Analisar artigo vs concorrentes"
+            "Analisar artigo"
           )}
         </span>
       </button>

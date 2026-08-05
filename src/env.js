@@ -29,6 +29,8 @@ export const env = createEnv({
     NEXTAUTH_URL: z.string().url().optional(),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
+    CLARITY_API_TOKEN: z.string().min(1).optional(),
+    CLARITY_ALLOWED_EMAILS: z.string().optional(),
     GITHUB_CLIENT_ID: z.string().optional(),
     GITHUB_CLIENT_SECRET: z.string().optional(),
     SQLITE_DATABASE_PATH: z.string().optional(),
@@ -41,6 +43,10 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+    NEXT_PUBLIC_CLARITY_PROJECT_ID: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]+$/)
+      .optional(),
   },
 
   /**
@@ -61,10 +67,13 @@ export const env = createEnv({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    CLARITY_API_TOKEN: process.env.CLARITY_API_TOKEN,
+    CLARITY_ALLOWED_EMAILS: process.env.CLARITY_ALLOWED_EMAILS,
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
     SQLITE_DATABASE_PATH: process.env.SQLITE_DATABASE_PATH,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_CLARITY_PROJECT_ID: process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

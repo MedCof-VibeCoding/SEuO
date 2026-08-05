@@ -100,11 +100,11 @@ export function buildIntelligenceScores(domains: DomainAnalysis[]): Intelligence
   }
   const c = primary.categoryScores;
   return {
-    seo: Math.round((c.technical + c.content) / 2),
+    seo: Math.round((c.technical + c.content + c.ux) / 3),
     content: c.content,
     technical: c.technical,
     conversion: c.ux,
-    authority: c.authority,
+    authority: 0,
   };
 }
 

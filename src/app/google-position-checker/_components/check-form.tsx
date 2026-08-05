@@ -20,7 +20,7 @@ const inputClass =
   "w-full rounded-xl border border-white/12 bg-black/30 px-4 py-3 pl-11 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-brand/50 focus:ring-2 focus:ring-brand/25";
 
 /**
- * Formulário URL + palavra-chave do Google Position Checker.
+ * Formulário do Google Position Checker (URL obrigatória; palavra-chave opcional).
  */
 export function CheckForm({
   loading,
@@ -71,7 +71,7 @@ export function CheckForm({
 
       <div>
         <label htmlFor="gpc-keyword" className="mb-1.5 block text-xs font-semibold text-white/65">
-          Palavra-chave
+          Palavra-chave <span className="font-normal text-white/40">(opcional)</span>
         </label>
         <div className="relative">
           <Search
@@ -82,12 +82,15 @@ export function CheckForm({
             id="gpc-keyword"
             type="text"
             autoComplete="off"
-            placeholder="ex.: marketing digital para médicos"
+            placeholder="Deixe em branco para detectar automaticamente"
             className={inputClass}
             disabled={loading}
             {...register("keyword")}
           />
         </div>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+          Sem palavra-chave, usamos a query com mais impressões no Search Console para esta URL.
+        </p>
         {errors.keyword ? (
           <p className="mt-1.5 text-xs text-brand-bright" role="alert">
             {errors.keyword.message}

@@ -100,6 +100,64 @@ export function buildReportTxt(report: SeoAnalysisReport): string {
       "GAPS DE PALAVRAS-CHAVE",
       report.keywordGaps.map((g) => `  • ${g.keyword} (${g.opportunity})`),
     ),
+    ...(report.searchConsole?.available
+      ? [
+          section("SEARCH CONSOLE (28 DIAS)", [
+            `  Impressões: ${report.searchConsole.totals.impressions}`,
+            `  Cliques: ${report.searchConsole.totals.clicks}`,
+            `  CTR: ${report.searchConsole.totals.ctr.toFixed(1)}%`,
+            `  Posição média: ${report.searchConsole.totals.averagePosition ?? "—"}`,
+            report.searchConsole.insight,
+            ...report.searchConsole.topQueries.slice(0, 10).map(
+              (q) =>
+                `  • “${q.keyword}” — #${q.position ?? "—"}, ${q.clicks} cliques, ${q.impressions} impressões`,
+            ),
+            ...(report.searchConsole.countries?.length
+              ? [
+                  "  Países:",
+                  ...report.searchConsole.countries.slice(0, 8).map(
+                    (c) =>
+                      `    • ${c.label}: ${c.clicks} cliques, ${c.impressions} impressões`,
+                  ),
+                ]
+              : []),
+            ...(report.searchConsole.devices?.length
+              ? [
+                  "  Dispositivos:",
+                  ...report.searchConsole.devices.map(
+                    (d) =>
+                      `    • ${d.label}: ${d.clicks} cliques, ${d.impressions} impressões`,
+                  ),
+                ]
+              : []),
+            ...(report.searchConsole.urlInspection?.available
+              ? [
+                  "  Inspeção de URL:",
+                  `    Cobertura: ${report.searchConsole.urlInspection.coverageState ?? "—"}`,
+                  `    Indexação: ${report.searchConsole.urlInspection.indexingState ?? "—"}`,
+                  `    robots.txt: ${report.searchConsole.urlInspection.robotsTxtState ?? "—"}`,
+                  `    Canônico Google: ${report.searchConsole.urlInspection.googleCanonical ?? "—"}`,
+                ]
+              : []),
+            ...(report.searchConsole.sitemaps?.length
+              ? [
+                  "  Sitemaps:",
+                  ...report.searchConsole.sitemaps.map(
+                    (s) =>
+                      `    • ${s.path} — erros: ${s.errors}, avisos: ${s.warnings}, ${s.isPending ? "pendente" : "processado"}`,
+                  ),
+                ]
+              : []),
+            ...(report.searchConsole.security
+              ? [
+                  `  Segurança: ${report.searchConsole.security.status}`,
+                  report.searchConsole.security.note,
+                  ...report.searchConsole.security.issues.map((i) => `    • ${i.detail}`),
+                ]
+              : []),
+          ]),
+        ]
+      : []),
     section("ESTRATÉGIA — O QUE FALTA NO SEU TEXTO", listItems(report.contentStrategy.missingTopics)),
     section(
       "ESTRATÉGIA — COMO MELHORAR O CONTEÚDO",

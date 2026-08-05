@@ -1,6 +1,9 @@
 import type { GooglePositionCheckResult } from "~/features/seo/types/google-position-check";
 import { normalizePageUrl } from "~/features/seo/lib/normalize-page-url";
-import { getRankTier } from "~/features/seo/services/google-position-check-engine";
+import {
+  deriveKeywordFromUrl,
+  getRankTier,
+} from "~/features/seo/services/google-position-check-engine";
 import {
   fetchKeywordPageMetrics,
   fetchPageQueries,
@@ -13,6 +16,11 @@ import {
 function impressionsLabel(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(".0", "")}k impressões`;
   return `${n} impressões (28d)`;
+}
+
+function clicksLabel(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(".0", "")}k cliques`;
+  return `${n} cliques (28d)`;
 }
 
 function competitionFromImpressions(impressions: number): GooglePositionCheckResult["competition"] {
@@ -58,6 +66,8 @@ function mapRelatedRows(
       position,
       rankTier: getRankTier(position),
       searchVolumeLabel: impressionsLabel(row.impressions),
+      clicks: row.clicks,
+      clicksLabel: clicksLabel(row.clicks),
       relevanceScore: Math.min(100, Math.round((row.impressions / maxImp) * 100)),
       isPrimary: keyword.toLowerCase() === kw,
     };
@@ -76,6 +86,8 @@ function mapRelatedRows(
       searchVolumeLabel: primaryRow
         ? impressionsLabel(primaryRow.impressions)
         : "0 impressões (28d)",
+      clicks: primaryRow?.clicks ?? 0,
+      clicksLabel: primaryRow ? clicksLabel(primaryRow.clicks) : clicksLabel(0),
       relevanceScore: 100,
       isPrimary: true,
     });
@@ -97,10 +109,10 @@ function mapRelatedRows(
 export async function buildGooglePositionFromSearchConsole(
   accessToken: string,
   rawUrl: string,
-  keyword: string,
+  keyword?: string,
 ): Promise<GooglePositionCheckResult> {
   const url = normalizePageUrl(rawUrl);
-  const kw = keyword.trim().toLowerCase();
+  const kwInput = keyword?.trim().toLowerCase() ?? "";
 
   const sites = await listGscSites(accessToken);
   const property = resolveGscProperty(url, sites);
@@ -108,11 +120,31 @@ export async function buildGooglePositionFromSearchConsole(
     throw new Error("GSC_PROPERTY_NOT_FOUND");
   }
 
-  const [primaryRow, pageRows, history] = await Promise.all([
-    fetchKeywordPageMetrics(accessToken, property, url, kw),
-    fetchPageQueries(accessToken, property, url),
-    fetchPositionHistory(accessToken, property, url, kw),
-  ]);
+  const pageRows = await fetchPageQueries(accessToken, property, url);
+
+  let kw: string;
+  let primaryRow: GscSearchRow | null;
+  const keywordAutoDetected = !kwInput;
+
+  if (kwInput) {
+    kw = kwInput;
+    primaryRow = await fetchKeywordPageMetrics(accessToken, property, url, kw);
+    if (!primaryRow) {
+      primaryRow =
+        pageRows.find((row) => row.keys[0]?.toLowerCase() === kw) ?? null;
+    }
+  } else {
+    const topRow = pageRows[0];
+    if (topRow?.keys[0]) {
+      kw = topRow.keys[0].toLowerCase();
+      primaryRow = topRow;
+    } else {
+      kw = deriveKeywordFromUrl(url);
+      primaryRow = null;
+    }
+  }
+
+  const history = await fetchPositionHistory(accessToken, property, url, kw);
 
   const position =
     primaryRow && primaryRow.impressions > 0
@@ -120,18 +152,26 @@ export async function buildGooglePositionFromSearchConsole(
       : null;
   const found = position !== null && position <= 100;
   const impressions = primaryRow?.impressions ?? 0;
+  const clicks = primaryRow?.clicks ?? 0;
   const ctr = primaryRow?.ctr ?? 0;
   const competition = competitionFromImpressions(impressions);
 
   const suggestion = !found
-    ? "Esta página não acumulou impressões no Search Console para esta palavra-chave nos últimos 28 dias. Revise o conteúdo, indexação e links internos."
+    ? keywordAutoDetected
+      ? "Nenhuma query registrada no Search Console para esta URL nos últimos 28 dias. Verifique indexação, sitemap e links internos."
+      : "Esta página não acumulou impressões no Search Console para esta palavra-chave nos últimos 28 dias. Revise o conteúdo, indexação e links internos."
     : position! <= 10
-      ? "Bom desempenho no Search Console. Mantenha o conteúdo atualizado e monitore CTR no relatório de performance."
-      : "Há impressões, mas a posição média pode melhorar. Reforce a palavra-chave no título, H1 e trechos iniciais.";
+      ? keywordAutoDetected
+        ? `A query com mais impressões para esta URL é “${kw}”. Bom desempenho — mantenha o conteúdo atualizado e monitore o CTR.`
+        : "Bom desempenho no Search Console. Mantenha o conteúdo atualizado e monitore CTR no relatório de performance."
+      : keywordAutoDetected
+        ? `A query principal detectada é “${kw}”. Reforce esse termo no título, H1 e trechos iniciais para melhorar a posição média.`
+        : "Há impressões, mas a posição média pode melhorar. Reforce a palavra-chave no título, H1 e trechos iniciais.";
 
   return {
     url,
     keyword: kw,
+    keywordAutoDetected,
     position: found ? position : null,
     rankTier: getRankTier(position),
     found,
@@ -141,6 +181,8 @@ export async function buildGooglePositionFromSearchConsole(
     checkedAt: new Date().toISOString(),
     searchVolume: impressions,
     searchVolumeLabel: impressionsLabel(impressions),
+    clicks,
+    clicksLabel: clicksLabel(clicks),
     competition,
     competitionLabel:
       competition === "low" ? "Baixa" : competition === "medium" ? "Média" : "Alta",

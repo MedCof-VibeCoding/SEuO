@@ -61,7 +61,8 @@ export function RelatedKeywordsPanel({
             <tr className="border-b border-white/8 bg-white/[0.03] text-[10px] font-semibold uppercase tracking-wider text-white/40">
               <th className="px-4 py-3">Palavra-chave</th>
               <th className="px-4 py-3">Posição</th>
-              <th className="hidden px-4 py-3 sm:table-cell">Volume</th>
+              <th className="hidden px-4 py-3 sm:table-cell">Impressões</th>
+              <th className="hidden px-4 py-3 sm:table-cell">Cliques</th>
               <th className="hidden px-4 py-3 md:table-cell">Relevância</th>
               <th className="px-4 py-3">Faixa</th>
             </tr>
@@ -97,6 +98,9 @@ export function RelatedKeywordsPanel({
                 <td className="hidden px-4 py-3 text-white/55 sm:table-cell">
                   {row.searchVolumeLabel}
                 </td>
+                <td className="hidden px-4 py-3 tabular-nums text-white/55 sm:table-cell">
+                  {row.clicksLabel}
+                </td>
                 <td className="hidden px-4 py-3 md:table-cell">
                   <RelevanceBar score={row.relevanceScore} />
                 </td>
@@ -110,7 +114,7 @@ export function RelatedKeywordsPanel({
       </div>
 
       <p className="mt-3 text-[10px] text-white/35">
-        Queries com impressões nesta URL — Google Search Console (últimos 28 dias).
+        Queries com impressões e cliques nesta URL — Google Search Console (últimos 28 dias).
       </p>
     </motion.section>
   );

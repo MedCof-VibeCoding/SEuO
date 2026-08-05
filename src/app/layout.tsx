@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 
 import { AuthSessionProvider } from "~/app/_components/auth-session-provider";
 import { AppToaster } from "~/app/_components/app-toaster";
+import { ClarityTracking } from "~/app/_components/clarity-tracking";
 import { authOptions } from "~/server/auth/auth-options";
 import { TRPCReactProvider } from "~/trpc/react";
 
@@ -40,6 +41,7 @@ export default async function RootLayout({
           <AuthSessionProvider session={session}>
             {children}
             <AppToaster />
+            <ClarityTracking />
           </AuthSessionProvider>
         </TRPCReactProvider>
       </body>

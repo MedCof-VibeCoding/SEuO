@@ -6,6 +6,20 @@ import type {
   RelatedRankingKeyword,
 } from "~/features/seo/types/google-position-check";
 
+/**
+ * Extrai palavra-chave provável a partir do slug da URL (fallback sem keyword).
+ */
+export function deriveKeywordFromUrl(pageUrl: string): string {
+  try {
+    const path = new URL(pageUrl).pathname;
+    const slug = path.split("/").filter(Boolean).pop()?.replace(/-/g, " ");
+    if (slug && slug.length >= 2) return slug.toLowerCase();
+  } catch {
+    /* ignore */
+  }
+  return "consulta orgânica";
+}
+
 function hashSeed(str: string): number {
   let h = 0;
   for (let i = 0; i < str.length; i++) {
@@ -33,6 +47,11 @@ function competitionFromSeed(seed: number): GooglePositionCheckResult["competiti
 function formatVolume(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(".0", "")}k/mês`;
   return `${n}/mês`;
+}
+
+function formatClicks(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(".0", "")}k cliques`;
+  return `${n} cliques (28d)`;
 }
 
 function buildTitle(keyword: string, hostname: string): string {
@@ -110,11 +129,15 @@ function buildRelatedKeywords(
     }
 
     const volume = 180 + (kwSeed % 6200);
+    const ctr = estimateCtr(position);
+    const clicks = position !== null ? Math.max(1, Math.round(volume * (ctr / 100))) : 0;
     items.push({
       keyword,
       position,
       rankTier: getRankTier(position),
       searchVolumeLabel: formatVolume(volume),
+      clicks,
+      clicksLabel: formatClicks(clicks),
       relevanceScore: isPrimary
         ? 100
         : Math.min(96, 55 + (kwSeed % 42) + (position !== null && position <= 20 ? 12 : 0)),
@@ -155,10 +178,10 @@ function estimateCtr(position: number | null): number {
  */
 export function buildGooglePositionCheck(
   rawUrl: string,
-  keyword: string,
+  keyword?: string,
 ): GooglePositionCheckResult {
   const url = normalizePageUrl(rawUrl);
-  const kw = keyword.trim().toLowerCase();
+  const kw = keyword?.trim() ? keyword.trim().toLowerCase() : deriveKeywordFromUrl(url);
   const seed = hashSeed(url + "|" + kw);
   const hostname = (() => {
     try {
@@ -188,6 +211,10 @@ export function buildGooglePositionCheck(
   const found = position !== null && position <= 100;
   const rankTier = getRankTier(position);
   const searchVolume = 320 + (seed % 4800);
+  const estimatedCtr = estimateCtr(position);
+  const clicks = found
+    ? Math.max(1, Math.round(searchVolume * (estimatedCtr / 100)))
+    : Math.round(seed % 40);
   const competition = competitionFromSeed(seed);
   const competitionLabels = { low: "Baixa", medium: "Média", high: "Alta" };
   const seoScore = found
@@ -204,6 +231,7 @@ export function buildGooglePositionCheck(
     dataSource: "mock",
     url,
     keyword: kw,
+    keywordAutoDetected: !keyword?.trim(),
     position: found ? position : null,
     rankTier,
     found,
@@ -213,9 +241,11 @@ export function buildGooglePositionCheck(
     checkedAt: new Date().toISOString(),
     searchVolume,
     searchVolumeLabel: formatVolume(searchVolume),
+    clicks,
+    clicksLabel: formatClicks(clicks),
     competition,
     competitionLabel: competitionLabels[competition],
-    estimatedCtr: estimateCtr(position),
+    estimatedCtr,
     seoScore,
     rankingHistory: buildRankingHistory(found ? position : null, seed),
     relatedKeywords: buildRelatedKeywords(kw, found ? position : null, url, seed),

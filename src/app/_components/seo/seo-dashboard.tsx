@@ -2,6 +2,18 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import {
+  Activity,
+  BarChart3,
+  ClipboardCheck,
+  Database,
+  FileText,
+  Gauge,
+  ListChecks,
+  Search,
+  Sparkles,
+} from "lucide-react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
 import {
@@ -14,8 +26,14 @@ import type { SeoAnalysisReport, SeoCategory, SeoInsight } from "~/features/seo/
 import { downloadReportTxt } from "~/features/seo/lib/export-report-txt";
 import { PLAN_LIMITS } from "~/features/seo/constants/plans";
 
+import { ComparativeSearchConsoleSection } from "./comparative-search-console-section";
 import { AiRecommendationPanel } from "./ai-recommendation-panel";
-import { ComparativeArticlePanel } from "./comparative-article-panel";
+import {
+  ArticleActionPlanBlock,
+  ArticleCollectionBlock,
+  ArticleKeywordsBlock,
+  ArticleOnPageBlock,
+} from "./comparative-article-panel";
 import { SeoBarChart } from "./charts/seo-bar-chart";
 import { SeoRadarChart } from "./charts/seo-radar-chart";
 import { CompetitorAdvantagePanel } from "./competitor-advantage-panel";
@@ -23,26 +41,61 @@ import { IntelligenceScoreGrid } from "./intelligence-score-grid";
 import { KeywordGapTable } from "./keyword-gap-table";
 import { ScoreRing } from "./score-ring";
 import { SeoImpactCard } from "./seo-impact-card";
-import { SeoPanel } from "./seo-panel";
+
+import { CategoryRanking } from "./report/category-ranking";
+import { CopyButton } from "./report/copy-button";
+import { InsightsBoard } from "./report/insights-board";
+import { PlanChecklist } from "./report/plan-checklist";
+import { ReportNav, type ReportNavItem } from "./report/report-nav";
+import { ReportSection, SubPanel } from "./report/report-section";
+import { ReportSectionsProvider } from "./report/report-sections-context";
+import { ReportSummary } from "./report/report-summary";
+import { ReportToolbar } from "./report/report-toolbar";
 
 type SeoDashboardProps = {
   report: SeoAnalysisReport;
 };
 
 const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS) as SeoCategory[];
+const COMPARATIVE_CATEGORY_ORDER: SeoCategory[] = ["technical", "content", "ux"];
+const COLLAPSED_SECTIONS = ["coleta", "conteudo", "auditoria"];
 
 /**
- * Dashboard comparativo completo com gráficos, insights e recomendações.
+ * Relatório SEO navegável: resumo executivo, seções recolhíveis e plano acionável.
  */
 export function SeoDashboard({ report }: SeoDashboardProps) {
   const isPro = report.userPlan === "pro";
   const canExportPdf = PLAN_LIMITS[report.userPlan].exportPdf;
-  const primary = report.domains.find((d) => d.role === "primary");
-  const isComparative = Boolean(report.comparativeArticle);
+  const article = report.comparativeArticle;
+  const isComparative = Boolean(article);
+  const categoryOrder = isComparative ? COMPARATIVE_CATEGORY_ORDER : CATEGORY_ORDER;
+  const primary = report.domains.find((domain) => domain.role === "primary");
+  const targetLabel = report.targetUrl ?? article?.targetUrl ?? report.primaryDomain;
+  const mainKeyword = report.mainKeyword ?? article?.mainKeyword;
+  const hasAudit = !isComparative && report.issueDetails.length > 0;
+  const hasPerformance = isComparative || Boolean(report.serpPosition);
 
-  const intelligentInsights: SeoInsight[] = report.comparativeArticle
-    ? buildComparativeInsights(report.comparativeArticle)
+  const intelligentInsights: SeoInsight[] = article
+    ? buildComparativeInsights(article)
     : report.insights;
+
+  const navItems = useMemo<ReportNavItem[]>(() => {
+    const items: ReportNavItem[] = [{ id: "resumo", label: "Resumo", icon: Gauge }];
+    if (isComparative) items.push({ id: "coleta", label: "Coleta de dados", icon: Database });
+    if (hasPerformance) {
+      items.push({ id: "desempenho", label: "Desempenho real", icon: Activity });
+    }
+    items.push({ id: "scores", label: "Scores e ranking", icon: BarChart3 });
+    items.push({ id: "palavras-chave", label: "Palavras-chave", icon: Search });
+    items.push({ id: "conteudo", label: "Conteúdo", icon: FileText });
+    if (hasAudit) items.push({ id: "auditoria", label: "Auditoria", icon: ClipboardCheck });
+    items.push({ id: "oportunidades", label: "Oportunidades", icon: Sparkles });
+    items.push({ id: "plano", label: "Plano de ação", icon: ListChecks });
+    return items;
+  }, [isComparative, hasPerformance, hasAudit]);
+
+  const sectionIds = useMemo(() => navItems.map((item) => item.id), [navItems]);
+  const stepOf = (id: string) => sectionIds.indexOf(id) + 1;
 
   const handleExport = () => {
     if (isComparative) {
@@ -58,352 +111,386 @@ export function SeoDashboard({ report }: SeoDashboardProps) {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 pb-20 sm:px-6 sm:py-10">
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="no-print mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-seo-accent-bright">
-            Análise concluída
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-            {report.comparativeArticle ? "Análise comparativa" : "Benchmark SEO"}
-          </h1>
-          <p className="mt-1 text-sm text-white/50">
-            {new Date(report.createdAt).toLocaleString("pt-BR")} · {report.domains.length}{" "}
-            {report.comparativeArticle ? "páginas" : "domínios"} ·{" "}
-            <span
-              className={
-                isPro ? "text-seo-accent-bright" : "rounded bg-white/10 px-1.5 text-white/60"
-              }
-            >
-              {isPro ? "Pro" : "Free"}
-            </span>
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {!isComparative ? (
-            <button
-              type="button"
-              onClick={handleExport}
-              className="rounded-lg border border-white/12 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5"
-            >
-              Exportar PDF
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleExport}
-              className="rounded-lg border border-brand/40 bg-brand/20 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand/30"
-            >
-              Exportar relatório (.txt)
-            </button>
-          )}
+    <ReportSectionsProvider sectionIds={sectionIds} collapsedIds={COLLAPSED_SECTIONS}>
+      <div className="mx-auto max-w-7xl px-4 pb-24 sm:px-6">
+        <motion.header
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="no-print flex flex-col gap-3 pb-5 pt-8 sm:flex-row sm:items-end sm:justify-between"
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-bright">
+              Análise concluída
+            </p>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">
+              {isComparative ? "Análise comparativa" : "Benchmark SEO"}
+            </h1>
+            <p className="mt-1.5 text-sm text-white/45">
+              {new Date(report.createdAt).toLocaleString("pt-BR")} · {report.domains.length}{" "}
+              {isComparative ? "páginas" : "domínios"} ·{" "}
+              <span
+                className={
+                  isPro ? "text-brand-bright" : "rounded bg-white/10 px-1.5 text-white/60"
+                }
+              >
+                {isPro ? "Pro" : "Free"}
+              </span>
+            </p>
+          </div>
           {!isComparative ? (
             <Link
               href={`/reports/${report.shareSlug}`}
-              className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+              className="inline-flex w-fit rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
             >
               Relatório detalhado
             </Link>
           ) : null}
-        </div>
-      </motion.div>
+        </motion.header>
 
-      {report.comparativeArticle ? (
-        <div className="mb-10">
-          <ComparativeArticlePanel article={report.comparativeArticle} />
-        </div>
-      ) : null}
-
-      <SeoPanel delay={40} className="mb-8">
-        <h2 className="mb-4 text-sm font-semibold text-white/80">Qualidade de SEO</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {report.domains.map((d, i) => (
-            <div key={d.domain} className="flex flex-col items-center py-4">
-              <ScoreRing
-                score={d.overallScore}
-                label={d.domain}
-                highlight={d.role === "primary"}
-                size={96}
-              />
-              <span className="mt-3 rounded-full bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/45">
-                #{d.rank} · {d.role === "primary" ? "Alvo" : "Concorrente"}
-              </span>
-            </div>
-          ))}
-        </div>
-      </SeoPanel>
-
-      <SeoPanel delay={60} className="mb-8">
-        <h2 className="mb-2 text-sm font-semibold text-white/80">
-          Posicionamento no Google
-        </h2>
-        <p className="mb-3 text-sm text-white/50">
-          Consulte posições orgânicas e SERP simulada por palavra-chave.
-        </p>
-        <Link
-          href="/google-position-checker"
-          className="inline-flex rounded-xl border border-brand/40 bg-brand/20 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand/30"
-        >
-          Verificar posição no Google →
-        </Link>
-      </SeoPanel>
-
-      <SeoPanel delay={80} className="mb-8">
-        <h2 className="mb-4 text-sm font-semibold text-white/80">
-          Scores de inteligência
-        </h2>
-        <IntelligenceScoreGrid scores={report.intelligenceScores} />
-      </SeoPanel>
-
-      <div className="mb-8 grid gap-6 lg:grid-cols-2">
-        <SeoPanel delay={100}>
-          <h2 className="mb-4 text-sm font-semibold text-white/80">Score geral</h2>
-          <SeoBarChart domains={report.domains} />
-        </SeoPanel>
-        <SeoPanel delay={160}>
-          <h2 className="mb-4 text-sm font-semibold text-white/80">Comparativo por categoria</h2>
-          <SeoRadarChart domains={report.domains} />
-        </SeoPanel>
-      </div>
-
-      <SeoPanel delay={200} className="mb-8 overflow-x-auto">
-        <h2 className="mb-4 text-sm font-semibold text-white/80">Ranking por categoria</h2>
-        <table className="w-full min-w-[520px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-white/40">
-              <th className="pb-3 pr-4 font-medium">Categoria</th>
-              {report.domains.map((d) => (
-                <th key={d.domain} className="pb-3 pr-4 font-medium">
-                  {d.domain}
-                </th>
-              ))}
-              <th className="pb-3 font-medium">Líder</th>
-            </tr>
-          </thead>
-          <tbody>
-            {CATEGORY_ORDER.map((cat) => {
-              const winner = report.winners.find((w) => w.category === cat);
-              return (
-                <tr key={cat} className="border-b border-white/[0.04]">
-                  <td className="py-3 pr-4 text-white/70">{CATEGORY_LABELS[cat]}</td>
-                  {report.domains.map((d) => {
-                    const score = d.categoryScores[cat];
-                    const isWinner = winner?.domain === d.domain;
-                    return (
-                      <td
-                        key={d.domain}
-                        className={[
-                          "py-3 pr-4 font-mono tabular-nums",
-                          isWinner ? "font-semibold text-seo-success" : "text-white/55",
-                        ].join(" ")}
-                      >
-                        {score}
-                        {isWinner ? " ↑" : ""}
-                      </td>
-                    );
-                  })}
-                  <td className="py-3 text-xs text-white/45">
-                    {winner?.domain ?? "—"}
-                    {winner && winner.marginPercent !== 0 ? (
-                      <span className="ml-1 text-white/30">
-                        ({winner.marginPercent > 0 ? "+" : ""}
-                        {winner.marginPercent}%)
-                      </span>
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </SeoPanel>
-
-      {!report.comparativeArticle && report.issueDetails.length > 0 ? (
-        <SeoPanel delay={220} className="mb-8">
-          <h2 className="mb-4 text-sm font-semibold text-white/80">
-            Auditoria consultiva — cada problema explicado
-          </h2>
-          <div className="flex flex-col gap-4">
-            {report.issueDetails.map((issue, i) => (
-              <SeoImpactCard
-                key={issue.id}
-                issue={issue}
-                locked={!isPro && i >= 3}
-              />
-            ))}
-          </div>
-          {!isPro ? (
-            <p className="mt-4 text-center text-sm text-white/45">
-              Plano Free: 3 diagnósticos completos.{" "}
-              <Link href="/settings" className="text-seo-accent-bright hover:underline">
-                Upgrade Pro
-              </Link>{" "}
-              para ver todos.
-            </p>
-          ) : null}
-        </SeoPanel>
-      ) : null}
-
-      <SeoPanel delay={240} className="mb-8">
-        <h2 className="mb-4 text-sm font-semibold text-white/80">
-          Por que concorrentes performam melhor
-        </h2>
-        <CompetitorAdvantagePanel
-          items={report.competitorAdvantages}
-          narrative={
-            report.comparativeArticle
-              ? buildCompetitorSeoNarrative(report.comparativeArticle)
-              : undefined
-          }
+        <ReportToolbar
+          score={primary?.overallScore ?? 0}
+          targetLabel={targetLabel}
+          mainKeyword={mainKeyword}
+          exportLabel={isComparative ? "Exportar .txt" : "Exportar PDF"}
+          onExport={handleExport}
         />
-      </SeoPanel>
 
-      {!report.comparativeArticle ? (
-        <SeoPanel delay={260} className="mb-8">
-          <h2 className="mb-4 text-sm font-semibold text-white/80">
-            SEO Copywriting Intelligence
-          </h2>
-          <AiRecommendationPanel
-            content={report.contentIntelligence}
-            aiNarrative={report.aiNarrative}
-            aiProvider={report.aiProvider}
-            isPro={isPro}
-          />
-        </SeoPanel>
-      ) : null}
+        <div className="mt-6 lg:grid lg:grid-cols-[196px_minmax(0,1fr)] lg:gap-8">
+          <ReportNav items={navItems} />
 
-      <SeoPanel delay={270} className="mb-8">
-        <h2 className="mb-4 text-sm font-semibold text-white/80">Gaps de palavras-chave</h2>
-        <KeywordGapTable gaps={report.keywordGaps} />
-      </SeoPanel>
+          <div className="flex min-w-0 flex-col gap-4">
+            <ReportSummary report={report} categories={categoryOrder} />
 
-      <SeoPanel delay={275} className="mb-8">
-        <h2 className="mb-2 text-sm font-semibold text-white/80">Estratégia de conteúdo</h2>
-        <p className="mb-4 text-sm text-white/45">
-          Sugestões práticas para melhorar o artigo que você analisou.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {[
-            { title: "O que falta no seu texto", items: report.contentStrategy.missingTopics },
-            { title: "Como melhorar o conteúdo atual", items: report.contentStrategy.semanticGaps },
-            {
-              title: "Palavras que os concorrentes usam",
-              items: report.contentStrategy.competitorKeywords,
-            },
-            {
-              title: "Perguntas que seu texto deveria responder",
-              items: report.contentStrategy.userQuestions,
-            },
-          ]
-            .filter((section) => section.items.length > 0)
-            .map((section) => (
-              <StrategyList key={section.title} title={section.title} items={section.items} />
-            ))}
-        </div>
-      </SeoPanel>
-
-      <div className="mb-8 grid gap-6 lg:grid-cols-2">
-        <SeoPanel delay={280}>
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white/80">
-            <span className="text-seo-accent-bright">✦</span> Insights inteligentes
-          </h2>
-          <p className="mb-4 text-sm text-white/45">
-            Quick wins e oportunidades de conteúdo para o artigo analisado.
-          </p>
-          {intelligentInsights.length === 0 ? (
-            <p className="text-sm text-white/45">Nenhum insight identificado nesta análise.</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {intelligentInsights.map((insight) => (
-                <li
-                  key={insight.id}
-                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-white/10"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-white/90">{insight.title}</p>
-                    <span
-                      className={[
-                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase",
-                        insight.type === "win"
-                          ? "bg-brand/20 text-brand-bright"
-                          : "bg-white/10 text-white/55",
-                      ].join(" ")}
-                    >
-                      {insight.type === "win" ? "Quick win" : "Conteúdo"}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm leading-relaxed text-white/55">
-                    {insight.description}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </SeoPanel>
-
-        <SeoPanel delay={280}>
-          <h2 className="mb-4 text-sm font-semibold text-white/80">O que otimizar agora</h2>
-          <ul className="flex flex-col gap-3">
-            {report.recommendations.map((rec) => (
-              <li
-                key={rec.id}
-                className="rounded-xl border border-seo-panel-border bg-seo-accent/[0.06] p-4"
+            {article ? (
+              <ReportSection
+                id="coleta"
+                step={stepOf("coleta")}
+                icon={Database}
+                title="Coleta de dados"
+                description="Páginas analisadas, evidências coletadas e contexto informado."
+                badge={`${report.domains.length} páginas`}
               >
-                <p className="font-medium text-white">{rec.title}</p>
-                <p className="mt-1 text-sm text-white/55">{rec.description}</p>
-                <div className="mt-2 flex gap-2 text-[10px] font-semibold uppercase tracking-wide">
-                  <span className="text-seo-success">Impacto {rec.impact}</span>
-                  <span className="text-white/35">·</span>
-                  <span className="text-white/45">Esforço {rec.effort}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </SeoPanel>
-      </div>
+                <ArticleCollectionBlock article={article} />
+              </ReportSection>
+            ) : null}
 
-      <SeoPanel delay={320}>
-        <h2 className="mb-4 text-sm font-semibold text-white/80">
-          Plano SEO — 30 dias {isPro ? "" : "(resumo Free)"}
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {(isPro ? report.plan30Days : report.plan30Days.slice(0, 2)).map((week) => (
-            <div
-              key={week.week}
-              className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+            {hasPerformance ? (
+              <ReportSection
+                id="desempenho"
+                step={stepOf("desempenho")}
+                icon={Activity}
+                title="Desempenho real da página"
+                description="Métricas observadas nas ferramentas conectadas, sem estimativas."
+              >
+                {isComparative ? (
+                  <SubPanel
+                    title="Search Console"
+                    description="Desempenho, audiência (país/dispositivo), indexação, sitemaps, inspeção de URL, links e segurança."
+                  >
+                    <ComparativeSearchConsoleSection
+                      initialData={report.searchConsole}
+                      targetUrl={targetLabel}
+                      mainKeyword={mainKeyword}
+                    />
+                  </SubPanel>
+                ) : (
+                  <Link
+                    href="/google-position-checker"
+                    className="inline-flex rounded-xl border border-brand/40 bg-brand/20 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand/30"
+                  >
+                    Verificar posição no Google →
+                  </Link>
+                )}
+              </ReportSection>
+            ) : null}
+
+            <ReportSection
+              id="scores"
+              step={stepOf("scores")}
+              icon={BarChart3}
+              title="Scores e ranking"
+              description="Como sua página se compara em cada dimensão avaliada."
             >
-              <p className="text-xs font-bold text-seo-accent-bright">Semana {week.week}</p>
-              <p className="mt-1 font-semibold text-white/90">{week.focus}</p>
-              <ul className="mt-3 list-inside list-disc text-sm text-white/50">
-                {week.tasks.map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </SeoPanel>
+              <div>
+                <SubPanel
+                  title="Qualidade de SEO"
+                  description="Score geral de cada página analisada."
+                >
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {report.domains.map((domain) => (
+                      <div key={domain.domain} className="flex flex-col items-center py-2">
+                        <ScoreRing
+                          score={domain.overallScore}
+                          label={domain.domain}
+                          highlight={domain.role === "primary"}
+                          size={96}
+                        />
+                        <span className="mt-3 rounded-full bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/45">
+                          #{domain.rank} ·{" "}
+                          {domain.role === "primary" ? "Sua página" : "Concorrente"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </SubPanel>
 
-      {primary ? (
-        <p className="no-print mt-8 text-center text-xs text-white/35">
-          Dados simulados para demonstração · integre Lighthouse e PageSpeed em produção
-        </p>
-      ) : null}
-    </div>
+                <SubPanel
+                  title="Scores de inteligência"
+                  description="Leitura qualitativa do conteúdo e da base técnica."
+                >
+                  <IntelligenceScoreGrid
+                    scores={report.intelligenceScores}
+                    hideKeys={isComparative ? ["authority"] : undefined}
+                  />
+                </SubPanel>
+
+                <SubPanel title="Comparativo visual">
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <SeoBarChart domains={report.domains} />
+                    <SeoRadarChart domains={report.domains} categories={categoryOrder} />
+                  </div>
+                </SubPanel>
+
+                <SubPanel
+                  title="Ranking por categoria"
+                  description="Barras verdes indicam a página líder de cada categoria."
+                >
+                  <CategoryRanking
+                    domains={report.domains}
+                    winners={report.winners}
+                    categories={categoryOrder}
+                  />
+                </SubPanel>
+              </div>
+            </ReportSection>
+
+            <ReportSection
+              id="palavras-chave"
+              step={stepOf("palavras-chave")}
+              icon={Search}
+              title="Palavras-chave"
+              description="Termos que sustentam o ranqueamento e os que faltam na sua página."
+              badge={`${report.keywordGaps.length} gaps`}
+            >
+              <div>
+                {article ? (
+                  <SubPanel title="Mapa de palavras-chave do artigo">
+                    <ArticleKeywordsBlock keywords={article.keywords} />
+                  </SubPanel>
+                ) : null}
+                <SubPanel
+                  title="Gaps de palavras-chave"
+                  description="Termos usados pelos concorrentes que ainda não aparecem no seu texto."
+                >
+                  <KeywordGapTable gaps={report.keywordGaps} />
+                </SubPanel>
+              </div>
+            </ReportSection>
+
+            <ReportSection
+              id="conteudo"
+              step={stepOf("conteudo")}
+              icon={FileText}
+              title="Conteúdo e diferenciais"
+              description="Padrões on-page, lacunas de conteúdo e vantagens dos concorrentes."
+            >
+              <div>
+                {article ? (
+                  <SubPanel title="Padrões de conteúdo e on-page">
+                    <ArticleOnPageBlock content={article.content} />
+                  </SubPanel>
+                ) : null}
+
+                <SubPanel
+                  title="Estratégia de conteúdo"
+                  description="Sugestões práticas para melhorar o artigo analisado."
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {[
+                      {
+                        title: "O que falta no seu texto",
+                        items: report.contentStrategy.missingTopics,
+                      },
+                      {
+                        title: "Como melhorar o conteúdo atual",
+                        items: report.contentStrategy.semanticGaps,
+                      },
+                      {
+                        title: "Palavras que os concorrentes usam",
+                        items: report.contentStrategy.competitorKeywords,
+                      },
+                      {
+                        title: "Perguntas que seu texto deveria responder",
+                        items: report.contentStrategy.userQuestions,
+                      },
+                    ]
+                      .filter((section) => section.items.length > 0)
+                      .map((section) => (
+                        <StrategyList
+                          key={section.title}
+                          title={section.title}
+                          items={section.items}
+                        />
+                      ))}
+                  </div>
+                </SubPanel>
+
+                <SubPanel title="Por que concorrentes performam melhor">
+                  <CompetitorAdvantagePanel
+                    items={report.competitorAdvantages}
+                    narrative={article ? buildCompetitorSeoNarrative(article) : undefined}
+                  />
+                </SubPanel>
+
+                {!isComparative ? (
+                  <SubPanel title="SEO Copywriting Intelligence">
+                    <AiRecommendationPanel
+                      content={report.contentIntelligence}
+                      aiNarrative={report.aiNarrative}
+                      aiProvider={report.aiProvider}
+                      isPro={isPro}
+                    />
+                  </SubPanel>
+                ) : null}
+              </div>
+            </ReportSection>
+
+            {hasAudit ? (
+              <ReportSection
+                id="auditoria"
+                step={stepOf("auditoria")}
+                icon={ClipboardCheck}
+                title="Auditoria consultiva"
+                description="Cada problema explicado, com exemplo bom e ruim."
+                badge={`${report.issueDetails.length} problemas`}
+              >
+                <div className="flex flex-col gap-4">
+                  {report.issueDetails.map((issue, index) => (
+                    <SeoImpactCard key={issue.id} issue={issue} locked={!isPro && index >= 3} />
+                  ))}
+                </div>
+                {!isPro ? (
+                  <p className="mt-4 text-center text-sm text-white/45">
+                    Plano Free: 3 diagnósticos completos.{" "}
+                    <Link href="/settings" className="text-brand-bright hover:underline">
+                      Upgrade Pro
+                    </Link>{" "}
+                    para ver todos.
+                  </p>
+                ) : null}
+              </ReportSection>
+            ) : null}
+
+            <ReportSection
+              id="oportunidades"
+              step={stepOf("oportunidades")}
+              icon={Sparkles}
+              title="Oportunidades"
+              description="Quick wins e recomendações priorizadas por impacto e esforço."
+              badge={`${intelligentInsights.length + report.recommendations.length} itens`}
+            >
+              <div>
+                <SubPanel title="Insights inteligentes">
+                  <InsightsBoard insights={intelligentInsights} />
+                </SubPanel>
+
+                <SubPanel title="O que otimizar agora">
+                  <ul className="grid gap-3 sm:grid-cols-2">
+                    {report.recommendations.map((recommendation) => (
+                      <li
+                        key={recommendation.id}
+                        className="group rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-brand/25 hover:bg-white/[0.04]"
+                      >
+                        <p className="font-medium leading-snug text-white/90">
+                          {recommendation.title}
+                        </p>
+                        <p className="mt-1.5 text-sm leading-relaxed text-white/55">
+                          {recommendation.description}
+                        </p>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <div className="flex flex-wrap gap-1.5">
+                            <span className="rounded bg-brand/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-bright">
+                              Impacto {recommendation.impact}
+                            </span>
+                            <span className="rounded bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/45">
+                              Esforço {recommendation.effort}
+                            </span>
+                          </div>
+                          <span className="opacity-0 transition focus-within:opacity-100 group-hover:opacity-100">
+                            <CopyButton
+                              text={`${recommendation.title}\n${recommendation.description}`}
+                            />
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </SubPanel>
+              </div>
+            </ReportSection>
+
+            <ReportSection
+              id="plano"
+              step={stepOf("plano")}
+              icon={ListChecks}
+              title="Plano de ação"
+              description="Da execução imediata ao roadmap de longo prazo."
+            >
+              <div>
+                {article ? (
+                  <SubPanel
+                    title="Plano por horizonte"
+                    description="Sequência recomendada de implementação."
+                  >
+                    <ArticleActionPlanBlock actionPlan={article.actionPlan} />
+                  </SubPanel>
+                ) : null}
+
+                <SubPanel
+                  title={`Plano de 30 dias${isPro ? "" : " (resumo Free)"}`}
+                  description="Marque o que já foi feito — o progresso fica salvo neste navegador."
+                >
+                  <PlanChecklist
+                    weeks={isPro ? report.plan30Days : report.plan30Days.slice(0, 2)}
+                    storageKey={`seo-plan:${report.id}`}
+                  />
+                </SubPanel>
+              </div>
+            </ReportSection>
+
+            {primary ? (
+              <p className="no-print mt-4 text-center text-xs text-white/30">
+                Dados simulados para demonstração · integre Lighthouse e PageSpeed em produção
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </ReportSectionsProvider>
   );
 }
 
+/**
+ * Lista temática da estratégia de conteúdo.
+ */
 function StrategyList({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-      <h4 className="text-sm font-semibold text-white/80">{title}</h4>
-      <ul className="mt-2 list-inside list-disc text-sm text-white/55">
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold text-white/85">{title}</h4>
+        <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold tabular-nums text-white/45">
+          {items.length}
+        </span>
+      </div>
+      <ul className="space-y-2 text-sm leading-relaxed text-white/60">
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item} className="flex gap-2">
+            <span
+              className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-brand-bright"
+              aria-hidden
+            />
+            <span>{item}</span>
+          </li>
         ))}
       </ul>
     </div>

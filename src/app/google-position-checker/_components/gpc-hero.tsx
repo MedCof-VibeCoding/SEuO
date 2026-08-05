@@ -36,9 +36,9 @@ export function GpcHero() {
         transition={{ delay: 0.1 }}
         className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55 sm:text-lg"
       >
-        Informe a URL da página e a palavra-chave alvo. Os dados vêm do{" "}
+        Informe a URL da página. A palavra-chave é opcional — sem ela, detectamos automaticamente a query com mais impressões no{" "}
         <strong className="font-medium text-white/70">Google Search Console</strong> (posição média,
-        impressões, CTR e queries da mesma página).
+        impressões, CTR e demais queries da mesma página).
       </motion.p>
     </section>
   );

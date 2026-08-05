@@ -31,8 +31,12 @@ export default function SettingsPage() {
           <SeoPanel delay={80}>
             <h2 className="font-semibold text-white">Integrações</h2>
             <ul className="mt-2 list-inside list-disc text-sm text-white/50">
-              <li>Google Gemini — análise comparativa (`GEMINI_API_KEY`, `GEMINI_MODEL=gemini-2.5-flash`)</li>
-              <li>OpenAI — opcional (`OPENAI_API_KEY`)</li>
+              <li>OpenAI — análise comparativa e otimização de texto (`OPENAI_API_KEY`, `OPENAI_MODEL=gpt-4o-mini`)</li>
+              <li>Google Gemini — opcional (`GEMINI_API_KEY`)</li>
+              <li>
+                Microsoft Clarity — tracking e Data Export API
+                (`NEXT_PUBLIC_CLARITY_PROJECT_ID`, `CLARITY_API_TOKEN`)
+              </li>
               <li>MongoDB — persistência opcional de relatórios</li>
               <li>Lighthouse / PageSpeed — rotas mock</li>
             </ul>

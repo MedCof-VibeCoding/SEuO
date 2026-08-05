@@ -21,14 +21,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "INVALID_JSON", message: "JSON inválido." }, { status: 400 });
   }
 
-  const parsed = googlePositionCheckSchema.safeParse(json);
+  const parsed = googlePositionCheckSchema.safeParse({
+    ...(typeof json === "object" && json !== null ? json : {}),
+    keyword:
+      typeof json === "object" && json !== null && "keyword" in json
+        ? (json as { keyword?: string }).keyword ?? ""
+        : "",
+  });
   if (!parsed.success) {
     const message = parsed.error.errors[0]?.message ?? "Dados inválidos.";
     return NextResponse.json({ error: "VALIDATION_ERROR", message }, { status: 400 });
   }
 
   if (USE_MOCK) {
-    const result = buildGooglePositionCheck(parsed.data.url, parsed.data.keyword);
+    const keyword = parsed.data.keyword.trim() || undefined;
+    const result = buildGooglePositionCheck(parsed.data.url, keyword);
     console.log(JSON.stringify(result, null, 2));
     return NextResponse.json({ result });
   }
@@ -68,10 +75,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    const keyword = parsed.data.keyword.trim() || undefined;
     const result = await buildGooglePositionFromSearchConsole(
       accessToken,
       parsed.data.url,
-      parsed.data.keyword,
+      keyword,
     );
     console.log(JSON.stringify(result, null, 2));
     return NextResponse.json({ result });

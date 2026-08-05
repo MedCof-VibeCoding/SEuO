@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import {
   PROMPT_ACTION_PLAN,
-  PROMPT_BACKLINKS,
   PROMPT_CONTENT,
   PROMPT_KEYWORDS,
 } from "~/features/seo/constants/comparative-analysis-prompts";
@@ -13,11 +12,9 @@ import { mapFetchedPagesToSummary } from "~/features/seo/lib/collected-pages";
 import { buildCollectionNotes, buildComparativeContext } from "~/features/seo/services/comparative-analysis-context";
 import {
   actionPlanAnalysisSchema,
-  backlinksAnalysisSchema,
   contentAnalysisSchema,
   keywordsAnalysisSchema,
   type ActionPlanAnalysis,
-  type BacklinksAnalysis,
   type ComparativeAnalysisSteps,
   type ContentAnalysis,
   type KeywordsAnalysis,
@@ -26,6 +23,13 @@ import type { AnalyzeArticlesInput, ComparativeArticleReport } from "~/features/
 import type { FetchedPageData } from "~/features/seo/services/page-fetcher";
 import { parseAiJsonText } from "~/features/seo/services/parse-ai-json";
 import { getGeminiModel, isGeminiConfigured } from "~/server/ai/gemini";
+
+const EMPTY_BACKLINKS = {
+  authority_comparison: {} as Record<string, string>,
+  link_gaps: [] as string[],
+  replicable_patterns: [] as string[],
+  top_link_opportunities: [] as string[],
+};
 
 /**
  * Chama Gemini e valida JSON com schema Zod.
@@ -93,7 +97,7 @@ async function callGeminiStep<T>(
 }
 
 /**
- * Executa os 4 prompts sequenciais (keywords → backlinks → conteúdo → plano).
+ * Executa os 3 prompts sequenciais (keywords → conteúdo → plano).
  */
 export async function runGeminiComparativeAnalysis(
   input: AnalyzeArticlesInput,
@@ -117,13 +121,6 @@ export async function runGeminiComparativeAnalysis(
       "keywords",
     );
 
-    const backlinks = await callGeminiStep<BacklinksAnalysis>(
-      PROMPT_BACKLINKS,
-      pageContext,
-      backlinksAnalysisSchema,
-      "backlinks",
-    );
-
     const content = await callGeminiStep<ContentAnalysis>(
       PROMPT_CONTENT,
       pageContext,
@@ -131,7 +128,7 @@ export async function runGeminiComparativeAnalysis(
       "content",
     );
 
-    const priorResults = JSON.stringify({ keywords, backlinks, content }, null, 2);
+    const priorResults = JSON.stringify({ keywords, content }, null, 2);
     const actionPlan = await callGeminiStep<ActionPlanAnalysis>(
       PROMPT_ACTION_PLAN,
       `${pageContext}\n\nAnálises anteriores:\n${priorResults}`,
@@ -139,7 +136,7 @@ export async function runGeminiComparativeAnalysis(
       "action-plan",
     );
 
-    return { keywords, backlinks, content, actionPlan };
+    return { keywords, backlinks: EMPTY_BACKLINKS, content, actionPlan };
   } catch (err) {
     console.error("[gemini-comparative]", err);
     throw toSeoAnalysisError(err, "Gemini");
@@ -159,6 +156,8 @@ export function mapStepsToComparativeArticle(
     targetUrl: input.targetUrl,
     competitorUrls: input.competitors,
     mainKeyword: input.mainKeyword,
+    niche: input.niche,
+    objective: input.objective,
     collectionNotes: buildCollectionNotes(fetchedPages),
     collectedPages: mapFetchedPagesToSummary(fetchedPages),
     keywords: steps.keywords,

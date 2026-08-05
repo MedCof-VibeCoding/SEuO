@@ -188,6 +188,8 @@ export type ComparativeArticleReport = {
   targetUrl: string;
   competitorUrls: string[];
   mainKeyword?: string;
+  niche?: string;
+  objective?: string;
   collectionNotes: string;
   collectedPages?: CollectedPageSummary[];
   keywords: KeywordsStepResult;
@@ -219,6 +221,8 @@ export type SeoAnalysisReport = {
   competitorAdvantages: CompetitorAdvantage[];
   keywordGaps: KeywordGap[];
   serpPosition?: SerpPositionAnalysis;
+  /** Dados reais do Google Search Console para a URL alvo (últimos 28 dias). */
+  searchConsole?: ComparativeSearchConsoleData;
   aiNarrative?: string;
   aiProvider?: "gemini" | "openai";
   userPlan: UserPlan;
@@ -240,6 +244,10 @@ export type SerpKeywordRanking = {
   competitorPositions: { domain: string; position: number | null }[];
   trend: "up" | "down" | "stable";
   estimatedMonthlyClicks: number;
+  /** Dados reais do Search Console (28 dias). */
+  impressions?: number;
+  clicks?: number;
+  ctr?: number;
 };
 
 export type SerpFeaturePresence = {
@@ -259,12 +267,131 @@ export type SerpPositionAnalysis = {
   insight: string;
   lastChecked: string;
   mainKeyword: string;
+  dataSource?: "search_console" | "estimated";
+  gscProperty?: string;
+  totalClicks?: number;
+  totalImpressions?: number;
+  averageCtr?: number;
+};
+
+import type { RankingHistoryPoint } from "~/features/seo/types/google-position-check";
+
+export type SearchConsoleQueryMetric = {
+  keyword: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number | null;
+};
+
+export type GscAudienceBreakdownItem = {
+  key: string;
+  label: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number | null;
+};
+
+export type GscSitemapStatus = {
+  path: string;
+  lastSubmitted?: string;
+  lastDownloaded?: string;
+  isPending: boolean;
+  isSitemapsIndex: boolean;
+  type?: string;
+  warnings: number;
+  errors: number;
+};
+
+export type GscUrlInspectionData = {
+  inspectionUrl: string;
+  coverageState?: string;
+  indexingState?: string;
+  robotsTxtState?: string;
+  pageFetchState?: string;
+  lastCrawlTime?: string;
+  googleCanonical?: string;
+  userCanonical?: string;
+  crawledAs?: string;
+  verdict?: string;
+  referringUrls: string[];
+  inspectionResultLink?: string;
+  available: boolean;
+  error?: string;
+};
+
+export type GscPageVisibilityItem = {
+  url: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number | null;
+};
+
+export type GscIndexCoverageData = {
+  targetInspection?: GscUrlInspectionData;
+  pagesServingInSearch: GscPageVisibilityItem[];
+  note: string;
+};
+
+export type GscLinksData = {
+  inboundReferringUrls: string[];
+  topInternalPages: GscPageVisibilityItem[];
+  note: string;
+};
+
+export type GscSecurityIssue = {
+  type: string;
+  detail: string;
+};
+
+export type GscSecurityData = {
+  status: "clear" | "issues_found" | "unavailable";
+  issues: GscSecurityIssue[];
+  note: string;
+};
+
+export type ComparativeSearchConsoleData = {
+  connected: boolean;
+  available: boolean;
+  gscProperty?: string;
+  targetUrl: string;
+  mainKeyword?: string;
+  mainKeywordMetrics?: SearchConsoleQueryMetric | null;
+  topQueries: SearchConsoleQueryMetric[];
+  totals: {
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    averagePosition: number | null;
+  };
+  /** Evolução diária da posição da keyword principal (GSC). */
+  positionHistory?: RankingHistoryPoint[];
+  /** Origem geográfica do público (28d). */
+  countries?: GscAudienceBreakdownItem[];
+  /** Dispositivo: mobile, desktop, tablet (28d). */
+  devices?: GscAudienceBreakdownItem[];
+  /** Sitemaps enviados e status de leitura. */
+  sitemaps?: GscSitemapStatus[];
+  /** Indexação da URL alvo + páginas com impressões. */
+  indexCoverage?: GscIndexCoverageData;
+  /** Inspeção individual da URL alvo. */
+  urlInspection?: GscUrlInspectionData;
+  /** Links de referência e páginas internas com mais visibilidade. */
+  links?: GscLinksData;
+  /** Sinais de segurança derivados da inspeção / indisponibilidade da API. */
+  security?: GscSecurityData;
+  insight: string;
+  checkedAt: string;
 };
 
 export type AnalyzeArticlesInput = {
   targetUrl: string;
   competitors: string[];
   mainKeyword?: string;
+  niche?: string;
+  objective?: string;
   audience?: string;
 };
 

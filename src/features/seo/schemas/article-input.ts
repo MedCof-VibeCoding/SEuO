@@ -26,6 +26,7 @@ const urlField = z
 const optionalUrlField = z
   .string()
   .max(2048)
+  .default("")
   .transform((v) => {
     const t = v.trim();
     if (!t) return undefined;
@@ -36,14 +37,17 @@ const optionalUrlField = z
 const optionalText = z
   .string()
   .max(300)
+  .default("")
   .transform((v) => v.trim() || undefined);
 
 export const analyzeArticlesSchema = z
   .object({
     targetUrl: urlField,
-    competitor1: urlField,
+    competitor1: optionalUrlField,
     competitor2: optionalUrlField,
     mainKeyword: optionalText,
+    niche: optionalText,
+    objective: optionalText,
   })
   .superRefine((data, ctx) => {
     const urls = [data.targetUrl, data.competitor1, data.competitor2].filter(
