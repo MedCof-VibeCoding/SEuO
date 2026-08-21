@@ -37,6 +37,7 @@ export default function SettingsPage() {
                 Microsoft Clarity — tracking e Data Export API
                 (`NEXT_PUBLIC_CLARITY_PROJECT_ID`, `CLARITY_API_TOKEN`)
               </li>
+              <li>Semrush — dados SEO via API (`SEMRUSH_API_KEY`)</li>
               <li>MongoDB — persistência opcional de relatórios</li>
               <li>Lighthouse / PageSpeed — rotas mock</li>
             </ul>
